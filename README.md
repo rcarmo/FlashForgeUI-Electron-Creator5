@@ -152,8 +152,4 @@ pnpm build:linux  # package Linux artifacts
 
 MIT License &mdash; Copyright (c) 2025 GhostTypes
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Parallel-7/FlashForgeUI,Parallel-7/FlashForgeUI-Electron&type=Date)](https://www.star-history.com/#Parallel-7/FlashForgeUI&Parallel-7/FlashForgeUI-Electron&Date)
-
 </div>
