@@ -14,6 +14,7 @@ cd "$ROOT_DIR"
 APP_BUNDLE="$("$ROOT_DIR/script/stage_app.sh" release)"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 INFO_PLIST="$APP_BUNDLE/Contents/Info.plist"
+APP_ICON="$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 ZIP_PATH="$ARCHIVE_DIR/$APP_NAME.zip"
 INSTALL_APP_BUNDLE="$INSTALL_DIR/$APP_NAME.app"
 
@@ -23,6 +24,8 @@ validate_bundle() {
   /usr/bin/plutil -lint "$INFO_PLIST" >/dev/null
   /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$INFO_PLIST" >/dev/null
   /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$INFO_PLIST" >/dev/null
+  /usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "$INFO_PLIST" | grep -q "^AppIcon$"
+  test -s "$APP_ICON"
   /usr/bin/file "$APP_BINARY" | grep -q "Mach-O"
 }
 

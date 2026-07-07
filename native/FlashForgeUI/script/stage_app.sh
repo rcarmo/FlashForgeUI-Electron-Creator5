@@ -17,6 +17,7 @@ APP_MACOS="$APP_CONTENTS/MacOS"
 APP_RESOURCES="$APP_CONTENTS/Resources"
 APP_BINARY="$APP_MACOS/$APP_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
+APP_ICON="$APP_RESOURCES/AppIcon.icns"
 export CLANG_MODULE_CACHE_PATH="$ROOT_DIR/.build/module-cache"
 
 case "$CONFIGURATION" in
@@ -41,6 +42,7 @@ rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_MACOS" "$APP_RESOURCES"
 cp "$BUILD_BINARY" "$APP_BINARY"
 chmod +x "$APP_BINARY"
+/usr/bin/swift "$ROOT_DIR/script/generate_app_icon.swift" "$APP_ICON"
 
 cat >"$INFO_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -57,6 +59,8 @@ cat >"$INFO_PLIST" <<PLIST
   <string>$BUNDLE_ID</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleName</key>
   <string>$DISPLAY_NAME</string>
   <key>CFBundleDocumentTypes</key>
@@ -172,5 +176,6 @@ printf 'APPL????' >"$APP_CONTENTS/PkgInfo"
 
 /usr/bin/plutil -lint "$INFO_PLIST" >/dev/null
 test -x "$APP_BINARY"
+test -s "$APP_ICON"
 
 echo "$APP_BUNDLE"
