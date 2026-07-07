@@ -75,6 +75,17 @@ import Testing
     #expect(detail.status.state == .ready)
 }
 
+@Test func modernPrinterStateAcceptsCommonFirmwareStatusAliases() {
+    #expect(ModernPrinterState(rawDetailStatus: "idle") == .ready)
+    #expect(ModernPrinterState(rawDetailStatus: "print") == .printing)
+    #expect(ModernPrinterState(rawDetailStatus: "building") == .printing)
+    #expect(ModernPrinterState(rawDetailStatus: "pause") == .paused)
+    #expect(ModernPrinterState(rawDetailStatus: "canceled") == .cancelled)
+    #expect(ModernPrinterState(rawDetailStatus: "finished") == .completed)
+    #expect(ModernPrinterState(rawDetailStatus: "Calibrate Doing") == .calibrating)
+    #expect(ModernPrinterState(rawDetailStatus: "disconnected") == .busy)
+}
+
 @Test func decodesCapitalizedMaterialStationPayload() throws {
     let json = """
     {

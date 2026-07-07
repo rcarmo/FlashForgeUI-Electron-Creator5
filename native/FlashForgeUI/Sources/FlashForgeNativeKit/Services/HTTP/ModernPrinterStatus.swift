@@ -100,26 +100,32 @@ public enum ModernPrinterState: String, Sendable {
     case unknown = "Unknown"
 
     public init(rawDetailStatus: String) {
-        switch rawDetailStatus.lowercased() {
-        case "ready":
+        let normalizedStatus = rawDetailStatus
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .replacingOccurrences(of: "-", with: "_")
+            .replacingOccurrences(of: " ", with: "_")
+
+        switch normalizedStatus {
+        case "idle", "ready":
             self = .ready
-        case "busy":
+        case "busy", "unknown", "offline", "disconnected":
             self = .busy
-        case "calibrate_doing":
+        case "calibrate", "calibrating", "calibrate_doing", "leveling":
             self = .calibrating
         case "error":
             self = .error
         case "heating":
             self = .heating
-        case "printing":
+        case "print", "printing", "build", "building":
             self = .printing
         case "pausing":
             self = .pausing
-        case "paused":
+        case "pause", "paused":
             self = .paused
-        case "cancel":
+        case "cancel", "canceled", "cancelled":
             self = .cancelled
-        case "completed":
+        case "complete", "completed", "finished":
             self = .completed
         default:
             self = .unknown
