@@ -26,7 +26,7 @@ public struct SettingsView: View {
         .settingsViewSizing()
         .scenePadding()
         .confirmationDialog(
-            forgetPrinterConfirmationTitle,
+            model.selectedPrinterRemovalConfirmationTitle,
             isPresented: $showsForgetPrinterConfirmation,
             titleVisibility: .visible
         ) {
@@ -36,7 +36,7 @@ public struct SettingsView: View {
 
             Button("Keep Printer", role: .cancel) {}
         } message: {
-            Text("This removes the saved profile, check code, camera settings, and cached status from this app.")
+            Text(model.selectedPrinterRemovalConfirmationMessage)
         }
     }
 
@@ -146,13 +146,6 @@ public struct SettingsView: View {
         return config.unavailableReason
     }
 
-    private var forgetPrinterConfirmationTitle: String {
-        guard let printer = model.selectedPrinter else {
-            return "Forget selected printer?"
-        }
-
-        return "Forget \(printer.name)?"
-    }
 }
 
 private extension View {

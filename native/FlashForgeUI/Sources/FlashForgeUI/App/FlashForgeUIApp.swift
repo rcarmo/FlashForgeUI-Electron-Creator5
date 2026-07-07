@@ -33,6 +33,13 @@ struct FlashForgeUIApp: App {
                 }
                 .keyboardShortcut("n", modifiers: [.command])
 
+                Button("Forget Selected Printer...") {
+                    confirmForgetSelectedPrinter()
+                }
+                .disabled(!model.canRemoveSelectedPrinter)
+
+                Divider()
+
                 Button("Discover Printers") {
                     Task { await model.discoverPrinters() }
                 }
@@ -160,6 +167,21 @@ struct FlashForgeUIApp: App {
         }
 
         Task { await model.sendSelectedPrinterJobCommand(.cancel) }
+    }
+
+    private func confirmForgetSelectedPrinter() {
+        let alert = NSAlert()
+        alert.messageText = model.selectedPrinterRemovalConfirmationTitle
+        alert.informativeText = model.selectedPrinterRemovalConfirmationMessage
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Forget Printer")
+        alert.addButton(withTitle: "Keep Printer")
+
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            return
+        }
+
+        model.removeSelectedPrinter()
     }
 }
 

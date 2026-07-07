@@ -496,6 +496,18 @@ public final class AppModel {
         return !isPreviewPrinter(selectedPrinter)
     }
 
+    public var selectedPrinterRemovalConfirmationTitle: String {
+        guard let printer = selectedPrinter else {
+            return "Forget selected printer?"
+        }
+
+        return "Forget \(printer.name)?"
+    }
+
+    public var selectedPrinterRemovalConfirmationMessage: String {
+        "This removes the saved profile, check code, camera settings, and cached status from this app."
+    }
+
     public var canOpenJobFile: Bool {
         selectedPrinter != nil || printers.count == 1
     }

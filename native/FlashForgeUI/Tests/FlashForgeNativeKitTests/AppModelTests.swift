@@ -487,6 +487,8 @@ import Testing
     model.addManualPrinter(name: "Second", address: "192.168.1.78", checkCode: "222222")
     let removedID = model.selectedPrinter?.id
 
+    #expect(model.selectedPrinterRemovalConfirmationTitle == "Forget Second?")
+    #expect(model.selectedPrinterRemovalConfirmationMessage == "This removes the saved profile, check code, camera settings, and cached status from this app.")
     model.removeSelectedPrinter()
 
     #expect(model.printers.count == 1)
