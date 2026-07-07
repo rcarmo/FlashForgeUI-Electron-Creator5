@@ -58,3 +58,9 @@ SIGN_IDENTITY="Developer ID Application: Example Team (TEAMID)" ./script/package
 
 Developer ID signing and notarization are separate distribution steps; the
 current script prepares a validated local archive under `dist/archive/`.
+
+## Job Files
+
+The macOS bundle declares `.gcode`, `.gx`, and `.3mf` as job file inputs. Opening
+one of those files with FlashForgeUI selects it for the currently selected
+printer, using the same upload readiness checks as the in-app file picker.

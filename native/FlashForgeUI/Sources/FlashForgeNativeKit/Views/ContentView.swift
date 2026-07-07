@@ -32,6 +32,9 @@ public struct ContentView: View {
         .sheet(isPresented: $showsSettings) {
             SettingsSheetView(model: model)
         }
+        .onOpenURL { fileURL in
+            model.openJobFile(fileURL)
+        }
     }
 }
 

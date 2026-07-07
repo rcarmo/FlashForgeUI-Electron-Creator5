@@ -1182,6 +1182,71 @@ import Testing
 }
 
 @MainActor
+@Test func openJobFileRequiresSelectedPrinter() async {
+    let model = AppModel(service: EmptyPrinterService(), bootstrapClient: FakeBootstrapClient())
+
+    let didOpen = model.openJobFile(URL(fileURLWithPath: "/tmp/benchy.gcode"))
+
+    #expect(didOpen == false)
+    #expect(model.selectedUploadFileURL == nil)
+    #expect(model.connectionMessage == "Select a printer first.")
+}
+
+@MainActor
+@Test func openJobFileRejectsUnsupportedFile() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+
+    let didOpen = model.openJobFile(URL(fileURLWithPath: "/tmp/notes.txt"))
+
+    #expect(didOpen == false)
+    #expect(model.selectedUploadFileURL == nil)
+    #expect(model.connectionMessage == "Choose a .gcode, .gx, or .3mf file.")
+}
+
+@MainActor
+@Test func openJobFileSelectsSupportedJobForCurrentPrinter() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+    let fileURL = URL(fileURLWithPath: "/tmp/plate.3mf")
+    model.selection = .printer(printer.id)
+
+    let didOpen = model.openJobFile(fileURL)
+
+    #expect(didOpen == true)
+    #expect(model.selectedUploadFileURL == fileURL)
+    #expect(model.selectedUploadFileName == "plate.3mf")
+    #expect(model.connectionMessage == "plate.3mf selected.")
+}
+
+@MainActor
 @Test func unsupportedUploadFileDoesNotSendRequest() async {
     let uploadClient = RecordingUploadClient()
     let printer = PrinterSnapshot(

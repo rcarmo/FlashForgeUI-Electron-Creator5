@@ -448,6 +448,23 @@ public final class AppModel {
         connectionMessage = "\(fileURL.lastPathComponent) selected."
     }
 
+    @discardableResult
+    public func openJobFile(_ fileURL: URL) -> Bool {
+        guard selectedPrinter != nil else {
+            connectionMessage = "Select a printer first."
+            return false
+        }
+
+        guard isSupportedUploadFile(fileURL) else {
+            connectionMessage = "Choose a .gcode, .gx, or .3mf file."
+            return false
+        }
+
+        selectedUploadFileURL = fileURL
+        connectionMessage = "\(fileURL.lastPathComponent) selected."
+        return true
+    }
+
     public func acknowledgeCameraOpen() {
         let config = selectedCameraStreamConfig
         if config.isAvailable, let streamURL = config.streamURL {
