@@ -137,6 +137,54 @@ public struct MaterialStationStatus: Hashable, Codable, Sendable {
         self.overallStatus = overallStatus
         self.errorMessage = errorMessage
     }
+
+    public var occupiedSlotCount: Int {
+        slots.filter { !$0.isEmpty }.count
+    }
+
+    public var statusSummary: String {
+        if let errorMessage, !errorMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return errorMessage
+        }
+
+        if !connected || overallStatus == .disconnected {
+            return "Station disconnected."
+        }
+
+        guard !slots.isEmpty else {
+            return "No material slots reported."
+        }
+
+        let slotNoun = slots.count == 1 ? "slot" : "slots"
+        let occupancy = "\(occupiedSlotCount) of \(slots.count) \(slotNoun) loaded."
+
+        switch overallStatus {
+        case .ready:
+            return occupancy
+        case .warming:
+            return "Changing material. \(occupancy)"
+        case .error:
+            return "Station needs attention. \(occupancy)"
+        case .disconnected:
+            return "Station disconnected."
+        }
+    }
+
+    public var activeSlotSummary: String? {
+        guard let activeSlot else {
+            return nil
+        }
+
+        guard let slot = slots.first(where: { $0.slotId == activeSlot }) else {
+            return "Slot \(activeSlot) selected."
+        }
+
+        if slot.isEmpty {
+            return "Slot \(activeSlot) selected, but no material is reported."
+        }
+
+        return "Slot \(activeSlot) active: \(slot.materialType ?? "Unknown material")."
+    }
 }
 
 public struct MaterialStationSlot: Identifiable, Hashable, Codable, Sendable {

@@ -112,3 +112,47 @@ import Testing
         )
     ])
 }
+
+@Test func materialStationSummariesExplainCurrentState() {
+    let readyStation = MaterialStationStatus(
+        connected: true,
+        slots: [
+            MaterialStationSlot(slotId: 1, materialType: "PLA", materialColor: "#ff0000", isEmpty: false),
+            MaterialStationSlot(slotId: 2, isEmpty: true)
+        ],
+        activeSlot: 1,
+        overallStatus: .ready
+    )
+
+    #expect(readyStation.occupiedSlotCount == 1)
+    #expect(readyStation.statusSummary == "1 of 2 slots loaded.")
+    #expect(readyStation.activeSlotSummary == "Slot 1 active: PLA.")
+
+    let changingStation = MaterialStationStatus(
+        connected: true,
+        slots: [MaterialStationSlot(slotId: 4, materialType: "ABS", materialColor: "ffffff", isEmpty: false)],
+        activeSlot: 4,
+        overallStatus: .warming
+    )
+
+    #expect(changingStation.statusSummary == "Changing material. 1 of 1 slot loaded.")
+
+    let disconnectedStation = MaterialStationStatus(
+        connected: false,
+        slots: [],
+        overallStatus: .disconnected
+    )
+
+    #expect(disconnectedStation.statusSummary == "Station disconnected.")
+
+    let erroredStation = MaterialStationStatus(
+        connected: true,
+        slots: [],
+        activeSlot: 2,
+        overallStatus: .error,
+        errorMessage: "Filament path blocked."
+    )
+
+    #expect(erroredStation.statusSummary == "Filament path blocked.")
+    #expect(erroredStation.activeSlotSummary == "Slot 2 selected.")
+}

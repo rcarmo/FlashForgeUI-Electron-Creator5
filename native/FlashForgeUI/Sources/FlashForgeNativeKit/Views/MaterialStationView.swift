@@ -19,10 +19,17 @@ public struct MaterialStationView: View {
                     .foregroundStyle(statusColor)
             }
 
-            if station.slots.isEmpty {
-                Text(station.errorMessage ?? "No material slots reported.")
+            VStack(alignment: .leading, spacing: 4) {
+                Text(station.statusSummary)
                     .foregroundStyle(.secondary)
-            } else {
+
+                if let activeSlotSummary = station.activeSlotSummary {
+                    Text(activeSlotSummary)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if !station.slots.isEmpty {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
                     ForEach(station.slots) { slot in
                         MaterialSlotCard(
@@ -38,7 +45,14 @@ public struct MaterialStationView: View {
     }
 
     private var statusColor: Color {
-        station.connected ? Color.secondary : Color.orange
+        switch station.overallStatus {
+        case .error:
+            return Color.red
+        case .disconnected:
+            return Color.orange
+        case .ready, .warming:
+            return station.connected ? Color.secondary : Color.orange
+        }
     }
 }
 
