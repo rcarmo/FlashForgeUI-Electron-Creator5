@@ -1505,6 +1505,7 @@ import Testing
 @MainActor
 @Test func uploadSelectedJobSendsModernUploadRequestAndStartsPrint() async throws {
     let uploadClient = RecordingUploadClient()
+    let modernClient = JobCommandRefreshModernClient(status: .printing)
     let directoryURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("FlashForgeNativeTests-\(UUID().uuidString)", isDirectory: true)
     let fileURL = directoryURL.appendingPathComponent("benchy.gcode")
@@ -1526,6 +1527,7 @@ import Testing
     let model = AppModel(
         service: PreviewPrinterService(),
         bootstrapClient: FakeBootstrapClient(),
+        modernClient: modernClient,
         uploadClient: uploadClient,
         printers: [printer]
     )
@@ -1563,8 +1565,14 @@ import Testing
     #expect(uploadClient.lastHost == "192.168.1.44")
     #expect(uploadClient.lastSerialNumber == "SN-TEST")
     #expect(uploadClient.lastCheckCode == "123456")
+    #expect(modernClient.requestCount == 1)
+    #expect(modernClient.lastHost == "192.168.1.44")
+    #expect(modernClient.lastSerialNumber == "SN-TEST")
+    #expect(modernClient.lastCheckCode == "123456")
     #expect(model.selectedPrinter?.status == .printing)
-    #expect(model.selectedPrinter?.activeJob?.fileName == "benchy.gcode")
+    #expect(model.selectedPrinter?.activeJob?.fileName == "benchy.3mf")
+    #expect(model.selectedPrinter?.activeJob?.progress == 0.42)
+    #expect(model.connectionMessage == "Uploaded and started benchy.gcode.")
 }
 
 @MainActor

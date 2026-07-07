@@ -861,6 +861,13 @@ public final class AppModel {
                 checkCode: trimmedCheckCode
             )
             applyUploadSuccess(fileURL: fileURL, printerID: printer.id)
+            if startPrintAfterUpload {
+                _ = await refreshStatus(
+                    for: printer,
+                    announcesProgress: false,
+                    reportsBackgroundFailure: false
+                )
+            }
             lastUpdated = Date()
             connectionMessage = startPrintAfterUpload ? "Uploaded and started \(fileURL.lastPathComponent)." : "Uploaded \(fileURL.lastPathComponent)."
         } catch {
