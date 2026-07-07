@@ -1,6 +1,7 @@
 import SwiftUI
 
 public struct SidebarView: View {
+    @State private var printerSearchText = ""
     @Bindable private var model: AppModel
     private let onAddPrinter: () -> Void
     private let onShowSettings: () -> Void
@@ -23,13 +24,19 @@ public struct SidebarView: View {
             }
 
             Section("Printers") {
-                ForEach(model.printers) { printer in
-                    PrinterSidebarRow(printer: printer)
-                        .tag(AppSelection.printer(printer.id))
+                if filteredPrinters.isEmpty {
+                    Text(printerEmptyMessage)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(filteredPrinters) { printer in
+                        PrinterSidebarRow(printer: printer)
+                            .tag(AppSelection.printer(printer.id))
+                    }
                 }
             }
         }
         .navigationTitle("FlashForgeUI")
+        .searchable(text: $printerSearchText, prompt: "Search Printers")
         .toolbar {
             ToolbarItem {
                 Button {
@@ -59,6 +66,16 @@ public struct SidebarView: View {
                 .help("Settings")
             }
         }
+    }
+
+    private var filteredPrinters: [PrinterSnapshot] {
+        model.printers(matching: printerSearchText)
+    }
+
+    private var printerEmptyMessage: String {
+        printerSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? "No printers"
+            : "No matching printers"
     }
 }
 

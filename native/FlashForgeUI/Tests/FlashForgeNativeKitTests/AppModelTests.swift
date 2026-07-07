@@ -132,6 +132,40 @@ import Testing
 }
 
 @MainActor
+@Test func printerSearchMatchesVisiblePrinterFields() async {
+    let studioPrinter = PrinterSnapshot(
+        name: "Studio Printer",
+        model: "Adventurer 5M Pro",
+        address: "192.168.1.44",
+        serialNumber: "SN-STUDIO",
+        status: .printing,
+        nozzleTemperature: TemperatureReading(current: 220),
+        bedTemperature: TemperatureReading(current: 60)
+    )
+    let workshopPrinter = PrinterSnapshot(
+        name: "Workshop",
+        model: "AD5X",
+        address: "printer.local",
+        serialNumber: "SN-WORKSHOP",
+        status: .needsAttention,
+        nozzleTemperature: TemperatureReading(current: 200),
+        bedTemperature: TemperatureReading(current: 55)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [studioPrinter, workshopPrinter]
+    )
+
+    #expect(model.printers(matching: "").map(\.name) == ["Studio Printer", "Workshop"])
+    #expect(model.printers(matching: "  5m pro ").map(\.name) == ["Studio Printer"])
+    #expect(model.printers(matching: "printer.local").map(\.name) == ["Workshop"])
+    #expect(model.printers(matching: "sn-studio").map(\.name) == ["Studio Printer"])
+    #expect(model.printers(matching: "attention").map(\.name) == ["Workshop"])
+    #expect(model.printers(matching: "not-here").isEmpty)
+}
+
+@MainActor
 @Test func knownPrinterActionReadinessExplainsEmptyState() async {
     let model = AppModel(service: EmptyPrinterService(), bootstrapClient: FakeBootstrapClient())
 

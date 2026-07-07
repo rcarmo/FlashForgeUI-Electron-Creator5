@@ -196,6 +196,19 @@ public final class AppModel {
         }
     }
 
+    public func printers(matching searchText: String) -> [PrinterSnapshot] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            return printers
+        }
+
+        return printers.filter { printer in
+            printer.searchableFields.contains { field in
+                field.localizedCaseInsensitiveContains(query)
+            }
+        }
+    }
+
     public var identifiedPrinterCount: Int {
         printers.filter { !($0.serialNumber ?? "").isEmpty }.count
     }

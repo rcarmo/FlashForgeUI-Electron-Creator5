@@ -52,6 +52,18 @@ public struct PrinterSnapshot: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
+extension PrinterSnapshot {
+    var searchableFields: [String] {
+        [
+            name,
+            model,
+            address,
+            serialNumber ?? "",
+            status.rawValue
+        ]
+    }
+}
+
 public enum PrinterStatus: String, Codable, Sendable {
     case ready = "Ready"
     case busy = "Busy"
