@@ -897,6 +897,11 @@ public final class AppModel {
                 checkCode: trimmedCheckCode
             )
             applyOptimisticState(for: command, printerID: printer.id)
+            _ = await refreshStatus(
+                for: printer,
+                announcesProgress: false,
+                reportsBackgroundFailure: false
+            )
             lastUpdated = Date()
             connectionMessage = command.successMessage
         } catch {

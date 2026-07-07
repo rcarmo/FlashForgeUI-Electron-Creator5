@@ -1306,6 +1306,7 @@ import Testing
 @MainActor
 @Test func pauseSelectedPrintSendsModernCommandAndUpdatesState() async {
     let commandClient = RecordingCommandClient()
+    let modernClient = JobCommandRefreshModernClient(status: .paused)
     let printer = PrinterSnapshot(
         name: "Desk Printer",
         model: "AD5X",
@@ -1320,6 +1321,7 @@ import Testing
     let model = AppModel(
         service: PreviewPrinterService(),
         bootstrapClient: FakeBootstrapClient(),
+        modernClient: modernClient,
         commandClient: commandClient,
         printers: [printer]
     )
@@ -1336,7 +1338,13 @@ import Testing
     #expect(commandClient.lastHost == "192.168.1.44")
     #expect(commandClient.lastSerialNumber == "SN-TEST")
     #expect(commandClient.lastCheckCode == "123456")
+    #expect(modernClient.requestCount == 1)
+    #expect(modernClient.lastHost == "192.168.1.44")
+    #expect(modernClient.lastSerialNumber == "SN-TEST")
+    #expect(modernClient.lastCheckCode == "123456")
     #expect(model.selectedPrinter?.status == .paused)
+    #expect(model.selectedPrinter?.activeJob?.fileName == "benchy.3mf")
+    #expect(model.selectedPrinter?.activeJob?.progress == 0.42)
     #expect(model.connectionMessage == "Print paused.")
 }
 
@@ -2128,6 +2136,46 @@ private final class RecordingModernClient: ModernPrinterHTTPClient, @unchecked S
             printProgress: status == .printing ? 0.25 : 0,
             estimatedTime: status == .printing ? 3600 : 0,
             printDuration: status == .printing ? 1200 : 0,
+            filamentType: "PLA",
+            cameraStreamURL: "rtsp://192.168.1.44/live"
+        )
+    }
+}
+
+private final class JobCommandRefreshModernClient: ModernPrinterHTTPClient, @unchecked Sendable {
+    var requestCount = 0
+    var lastHost: String?
+    var lastPort: UInt16?
+    var lastSerialNumber: String?
+    var lastCheckCode: String?
+    let status: ModernPrinterState
+
+    init(status: ModernPrinterState) {
+        self.status = status
+    }
+
+    func fetchStatus(host: String, port: UInt16, serialNumber: String, checkCode: String) async throws -> ModernPrinterStatus {
+        requestCount += 1
+        lastHost = host
+        lastPort = port
+        lastSerialNumber = serialNumber
+        lastCheckCode = checkCode
+
+        return ModernPrinterStatus(
+            displayName: "Desk Printer",
+            firmwareVersion: "3.2.0",
+            pid: 38,
+            isPro: false,
+            isAD5X: true,
+            state: status,
+            nozzleCurrent: 210,
+            nozzleTarget: 220,
+            bedCurrent: 55,
+            bedTarget: 60,
+            printFileName: "benchy.3mf",
+            printProgress: 0.42,
+            estimatedTime: 2400,
+            printDuration: 900,
             filamentType: "PLA",
             cameraStreamURL: "rtsp://192.168.1.44/live"
         )
