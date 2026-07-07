@@ -92,6 +92,15 @@ public struct SettingsView: View {
                 Section("Connection") {
                     SecureField("Check code", text: $model.checkCode)
                         .textFieldStyle(.roundedBorder)
+
+                    if let checkCodeStatusMessage = model.selectedPrinterCheckCodeStatusMessage {
+                        Label(
+                            checkCodeStatusMessage,
+                            systemImage: model.hasSelectedPrinterCheckCode ? "checkmark.circle" : "info.circle"
+                        )
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section("Camera") {

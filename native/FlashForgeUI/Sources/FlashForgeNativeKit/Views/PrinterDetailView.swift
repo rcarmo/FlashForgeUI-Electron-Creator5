@@ -229,7 +229,7 @@ public struct PrinterDetailView: View {
                 .font(.title2.weight(.semibold))
 
             ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .top) {
                     checkCodeField
                     refreshButton
                 }
@@ -263,9 +263,20 @@ public struct PrinterDetailView: View {
     }
 
     private var checkCodeField: some View {
-        SecureField("Check code", text: $model.checkCode)
-            .textFieldStyle(.roundedBorder)
-            .frame(maxWidth: 220)
+        VStack(alignment: .leading, spacing: 4) {
+            SecureField("Check code", text: $model.checkCode)
+                .textFieldStyle(.roundedBorder)
+                .frame(maxWidth: 220)
+
+            if let checkCodeStatusMessage = model.selectedPrinterCheckCodeStatusMessage {
+                Label(
+                    checkCodeStatusMessage,
+                    systemImage: model.hasSelectedPrinterCheckCode ? "checkmark.circle" : "info.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
     }
 
     private var refreshButton: some View {

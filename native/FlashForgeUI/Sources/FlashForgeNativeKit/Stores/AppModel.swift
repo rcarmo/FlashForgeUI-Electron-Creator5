@@ -178,6 +178,24 @@ public final class AppModel {
         return printers.first { $0.id == id }
     }
 
+    public var hasSelectedPrinterCheckCode: Bool {
+        guard let printer = selectedPrinter else {
+            return false
+        }
+
+        return storedCheckCode(for: printer.id) != nil
+    }
+
+    public var selectedPrinterCheckCodeStatusMessage: String? {
+        guard selectedPrinter != nil else {
+            return nil
+        }
+
+        return hasSelectedPrinterCheckCode
+            ? "Check code saved for this printer."
+            : "Needed for refresh, upload, and job controls."
+    }
+
     public var activePrintCount: Int {
         printers.filter { $0.activeJob != nil }.count
     }
