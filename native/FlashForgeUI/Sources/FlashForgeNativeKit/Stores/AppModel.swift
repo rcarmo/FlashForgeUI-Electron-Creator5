@@ -505,22 +505,21 @@ public final class AppModel {
 
     @discardableResult
     public func addManualPrinter(name: String, address: String, checkCode: String = "") -> Bool {
-        let trimmedAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedAddress.isEmpty else {
+        guard let normalizedAddress = normalizedManualPrinterAddress(address) else {
             connectionMessage = "Enter the printer address."
             return false
         }
 
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedCheckCode = checkCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        let displayName = trimmedName.isEmpty ? trimmedAddress : trimmedName
+        let displayName = trimmedName.isEmpty ? normalizedAddress : trimmedName
 
         if let index = printers.firstIndex(where: {
-            $0.address == trimmedAddress && ($0.commandPort ?? 8899) == 8899
+            $0.address == normalizedAddress && ($0.commandPort ?? 8899) == 8899
         }) {
             printers[index].name = displayName
             printers[index].model = "Manual Printer"
-            printers[index].address = trimmedAddress
+            printers[index].address = normalizedAddress
             printers[index].commandPort = 8899
             printers[index].eventPort = 8898
             printers[index].protocolFormat = .modern
@@ -536,7 +535,7 @@ public final class AppModel {
         let printer = PrinterSnapshot(
             name: displayName,
             model: "Manual Printer",
-            address: trimmedAddress,
+            address: normalizedAddress,
             commandPort: 8899,
             eventPort: 8898,
             protocolFormat: .modern,
@@ -1077,6 +1076,26 @@ public final class AppModel {
 
     private func isSupportedUploadFile(_ fileURL: URL) -> Bool {
         Self.supportedUploadFileExtensions.contains(fileURL.pathExtension.lowercased())
+    }
+
+    private func normalizedManualPrinterAddress(_ address: String) -> String? {
+        let trimmedAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedAddress.isEmpty else {
+            return nil
+        }
+
+        if let url = URL(string: trimmedAddress), let host = url.host(), !host.isEmpty {
+            return host
+        }
+
+        let withoutPath = trimmedAddress.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: true)
+            .first
+            .map(String.init) ?? trimmedAddress
+        let withoutPort = withoutPath.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: true)
+            .first
+            .map(String.init) ?? withoutPath
+        let normalizedAddress = withoutPort.trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalizedAddress.isEmpty ? nil : normalizedAddress
     }
 
     private func rememberRecentUploadFile(_ fileURL: URL) {

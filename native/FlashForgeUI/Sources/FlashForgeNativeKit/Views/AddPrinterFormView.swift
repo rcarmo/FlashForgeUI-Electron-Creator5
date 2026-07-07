@@ -25,7 +25,7 @@ public struct AddPrinterFormView: View {
                 .textFieldStyle(.roundedBorder)
 
             VStack(alignment: .leading, spacing: 4) {
-                TextField("Address", text: $printerAddress)
+                TextField("Address or URL", text: $printerAddress)
                     .textFieldStyle(.roundedBorder)
                     .onChange(of: printerAddress) {
                         validationMessage = nil

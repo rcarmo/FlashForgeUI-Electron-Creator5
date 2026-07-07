@@ -358,6 +358,46 @@ import Testing
 }
 
 @MainActor
+@Test func manualPrinterProfileNormalizesPastedAddressURL() async {
+    let store = RecordingProfileStore()
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store
+    )
+
+    model.addManualPrinter(
+        name: "",
+        address: " http://192.168.1.77:8898/detail ",
+        checkCode: "123456"
+    )
+
+    #expect(model.printers.count == 1)
+    #expect(model.selectedPrinter?.name == "192.168.1.77")
+    #expect(model.selectedPrinter?.address == "192.168.1.77")
+    #expect(store.document.profiles.first?.address == "192.168.1.77")
+}
+
+@MainActor
+@Test func manualPrinterProfileNormalizesHostPortAndUpdatesExistingProfile() async {
+    let store = RecordingProfileStore()
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store
+    )
+
+    model.addManualPrinter(name: "Old Name", address: "printer.local:8898", checkCode: "111111")
+    model.addManualPrinter(name: "New Name", address: "http://printer.local:8899/", checkCode: "222222")
+
+    #expect(model.printers.count == 1)
+    #expect(model.selectedPrinter?.name == "New Name")
+    #expect(model.selectedPrinter?.address == "printer.local")
+    #expect(model.checkCode == "222222")
+    #expect(store.document.profiles.count == 1)
+}
+
+@MainActor
 @Test func manualPrinterProfileUpdatesExistingAddress() async {
     let store = RecordingProfileStore()
     let model = AppModel(
