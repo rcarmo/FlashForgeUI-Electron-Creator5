@@ -51,6 +51,11 @@ struct FlashForgeUIApp: App {
                 .keyboardShortcut("k", modifiers: [.command])
                 .disabled(!model.canConnectSelectedPrinter)
 
+                Button("Forget Saved Check Code") {
+                    model.clearSelectedPrinterCheckCode()
+                }
+                .disabled(!model.canClearSelectedPrinterCheckCode)
+
                 Button("Identify All Printers") {
                     Task { await model.connectKnownPrinters() }
                 }
@@ -79,6 +84,11 @@ struct FlashForgeUIApp: App {
                 }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .disabled(!model.canOpenSelectedCamera)
+
+                Button("Reset Camera Settings") {
+                    model.resetSelectedCameraSettings()
+                }
+                .disabled(!model.canResetSelectedCameraSettings)
 
                 Button("Choose Job File...") {
                     chooseJobFile()
