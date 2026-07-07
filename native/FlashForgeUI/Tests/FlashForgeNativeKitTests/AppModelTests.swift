@@ -868,6 +868,36 @@ import Testing
 }
 
 @MainActor
+@Test func refreshSelectedPrinterStatusNamesUnreachablePrinter() async {
+    let client = FailingModernClient(error: URLError(.cannotConnectToHost))
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "Unknown",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        modernClient: client,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+
+    let didRefresh = await model.refreshSelectedPrinterStatus()
+
+    #expect(didRefresh == false)
+    #expect(client.requestCount == 1)
+    #expect(model.connectionMessage == "Could not refresh Desk Printer at 192.168.1.44. Check the check code and network.")
+    #expect(model.isRefreshingStatus == false)
+}
+
+@MainActor
 @Test func refreshKnownPrinterStatusesUpdatesRefreshableProfiles() async {
     let firstID = UUID()
     let secondID = UUID()
@@ -912,6 +942,51 @@ import Testing
     #expect(model.refreshablePrinterCount == 2)
     #expect(model.printers.allSatisfy { $0.status == .printing })
     #expect(model.connectionMessage == "Refreshed 2 printers.")
+    #expect(model.isRefreshingAllStatuses == false)
+}
+
+@MainActor
+@Test func refreshKnownPrinterStatusesExplainsAllFailures() async {
+    let firstID = UUID()
+    let secondID = UUID()
+    let client = FailingModernClient(error: URLError(.cannotConnectToHost))
+    let store = RecordingProfileStore(
+        document: PrinterProfileDocument(
+            profiles: [
+                PrinterProfile(
+                    id: firstID,
+                    name: "Studio",
+                    model: "AD5X",
+                    address: "192.168.1.44",
+                    serialNumber: "SN-FIRST",
+                    eventPort: 8898,
+                    checkCode: "111111"
+                ),
+                PrinterProfile(
+                    id: secondID,
+                    name: "Workshop",
+                    model: "Adventurer 5M Pro",
+                    address: "192.168.1.45",
+                    serialNumber: "SN-SECOND",
+                    eventPort: 8898,
+                    checkCode: "222222"
+                )
+            ],
+            selectedPrinterID: firstID
+        )
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        modernClient: client,
+        profileStore: store
+    )
+
+    let refreshedCount = await model.refreshKnownPrinterStatuses()
+
+    #expect(refreshedCount == 0)
+    #expect(client.requestCount == 2)
+    #expect(model.connectionMessage == "Could not refresh any printers. Check saved check codes and network.")
     #expect(model.isRefreshingAllStatuses == false)
 }
 
@@ -2020,6 +2095,20 @@ private final class FailingCommandClient: ModernPrinterCommandClient, @unchecked
         serialNumber: String,
         checkCode: String
     ) async throws {
+        throw error
+    }
+}
+
+private final class FailingModernClient: ModernPrinterHTTPClient, @unchecked Sendable {
+    var requestCount = 0
+    let error: Error
+
+    init(error: Error) {
+        self.error = error
+    }
+
+    func fetchStatus(host: String, port: UInt16, serialNumber: String, checkCode: String) async throws -> ModernPrinterStatus {
+        requestCount += 1
         throw error
     }
 }

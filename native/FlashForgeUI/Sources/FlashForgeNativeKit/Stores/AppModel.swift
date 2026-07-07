@@ -1058,7 +1058,7 @@ public final class AppModel {
         }
 
         if announcesProgress {
-            connectionMessage = "Refreshed \(NativeFormatters.itemCount(refreshedCount, singular: "printer", plural: "printers"))."
+            connectionMessage = knownPrinterRefreshSummary(refreshedCount: refreshedCount, targetCount: targets.count)
         }
         return refreshedCount
     }
@@ -1125,9 +1125,9 @@ public final class AppModel {
             return true
         } catch {
             modernStatusesByPrinterID.removeValue(forKey: printer.id)
-            connectionMessage = announcesProgress
-                ? "Could not refresh status. Check the code and network."
-                : reportsBackgroundFailure ? "Auto-refresh failed. Check the code and network." : connectionMessage
+            if announcesProgress || reportsBackgroundFailure {
+                connectionMessage = statusRefreshFailureMessage(for: printer, isBackground: !announcesProgress)
+            }
             return false
         }
     }
@@ -1421,6 +1421,27 @@ public final class AppModel {
 
             return "Printer rejected the upload: \(trimmedMessage)."
         }
+    }
+
+    private func knownPrinterRefreshSummary(refreshedCount: Int, targetCount: Int) -> String {
+        if refreshedCount == targetCount {
+            return "Refreshed \(NativeFormatters.itemCount(refreshedCount, singular: "printer", plural: "printers"))."
+        }
+
+        if refreshedCount == 0 {
+            return "Could not refresh any printers. Check saved check codes and network."
+        }
+
+        return "Refreshed \(refreshedCount) of \(targetCount) printers. Check the remaining printers' codes and network."
+    }
+
+    private func statusRefreshFailureMessage(for printer: PrinterSnapshot, isBackground: Bool) -> String {
+        let target = "\(printer.name) at \(printer.address)"
+        if isBackground {
+            return "Auto-refresh failed for \(target). Check the check code and network."
+        }
+
+        return "Could not refresh \(target). Check the check code and network."
     }
 
     private func jobCommandFailureMessage(for command: PrinterJobCommand, error: Error) -> String {
