@@ -437,6 +437,41 @@ import Testing
 }
 
 @MainActor
+@Test func manualPrinterProfilePreservesDiscoveredPrinterIdentity() async {
+    let store = RecordingProfileStore()
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "Adventurer 5M Pro",
+        address: "192.168.1.77",
+        serialNumber: "SN-DISCOVERED",
+        commandPort: 8899,
+        eventPort: 8898,
+        protocolFormat: .modern,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 32),
+        bedTemperature: TemperatureReading(current: 29)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store,
+        printers: [printer]
+    )
+
+    model.addManualPrinter(name: "Workshop", address: "192.168.1.77", checkCode: "123456")
+
+    #expect(model.printers.count == 1)
+    #expect(model.selectedPrinter?.name == "Workshop")
+    #expect(model.selectedPrinter?.model == "Adventurer 5M Pro")
+    #expect(model.selectedPrinter?.serialNumber == "SN-DISCOVERED")
+    #expect(model.selectedPrinter?.status == .ready)
+    #expect(model.checkCode == "123456")
+    #expect(store.document.profiles.first?.model == "Adventurer 5M Pro")
+    #expect(store.document.profiles.first?.serialNumber == "SN-DISCOVERED")
+    #expect(store.document.profiles.first?.checkCode == "123456")
+}
+
+@MainActor
 @Test func removeSelectedPrinterDeletesProfileAndSelectsRemainingPrinter() async {
     let store = RecordingProfileStore()
     let model = AppModel(

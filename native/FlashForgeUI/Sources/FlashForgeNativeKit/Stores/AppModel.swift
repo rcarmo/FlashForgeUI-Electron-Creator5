@@ -546,12 +546,13 @@ public final class AppModel {
         if let index = printers.firstIndex(where: {
             $0.address == normalizedAddress && ($0.commandPort ?? 8899) == 8899
         }) {
+            let existingPrinter = printers[index]
             printers[index].name = displayName
-            printers[index].model = "Manual Printer"
+            printers[index].model = existingPrinter.model == "Manual Printer" ? "Manual Printer" : existingPrinter.model
             printers[index].address = normalizedAddress
-            printers[index].commandPort = 8899
-            printers[index].eventPort = 8898
-            printers[index].protocolFormat = .modern
+            printers[index].commandPort = existingPrinter.commandPort ?? 8899
+            printers[index].eventPort = existingPrinter.eventPort ?? 8898
+            printers[index].protocolFormat = existingPrinter.protocolFormat ?? .modern
 
             selection = .printer(printers[index].id)
             if !trimmedCheckCode.isEmpty {
