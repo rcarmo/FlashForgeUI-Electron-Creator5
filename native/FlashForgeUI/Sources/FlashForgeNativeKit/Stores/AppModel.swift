@@ -494,6 +494,15 @@ public final class AppModel {
         return true
     }
 
+    public func clearSelectedUploadFile() {
+        guard selectedUploadFileURL != nil else {
+            return
+        }
+
+        selectedUploadFileURL = nil
+        connectionMessage = "Selected job file cleared."
+    }
+
     public func clearRecentUploadFiles() {
         guard let selectedPrinter else {
             return

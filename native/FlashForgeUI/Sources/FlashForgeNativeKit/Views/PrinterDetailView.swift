@@ -294,6 +294,14 @@ public struct PrinterDetailView: View {
                 .lineLimit(1)
                 .frame(maxWidth: 240, alignment: .leading)
 
+            Button {
+                model.clearSelectedUploadFile()
+            } label: {
+                Label("Clear File", systemImage: "xmark.circle")
+            }
+            .controlSize(.large)
+            .disabled(model.selectedUploadFileURL == nil)
+
             Toggle("Start", isOn: $model.startPrintAfterUpload)
 
             Toggle("Level", isOn: $model.levelingBeforePrint)

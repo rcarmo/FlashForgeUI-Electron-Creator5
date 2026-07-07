@@ -1366,6 +1366,12 @@ import Testing
     model.selection = .printer(firstPrinter.id)
     #expect(model.selectedUploadFileURL == firstFileURL)
 
+    model.clearSelectedUploadFile()
+    #expect(model.selectedUploadFileURL == nil)
+    #expect(model.selectedUploadFileName == "No file selected")
+    #expect(model.selectedUploadReadinessMessage == "Choose a job file first.")
+    #expect(model.connectionMessage == "Selected job file cleared.")
+
     model.selection = .printer(secondPrinter.id)
     #expect(model.selectedUploadFileURL == secondFileURL)
 }
