@@ -643,7 +643,7 @@ public final class AppModel {
             lastUpdated = Date()
             connectionMessage = startPrintAfterUpload ? "Uploaded and started \(fileURL.lastPathComponent)." : "Uploaded \(fileURL.lastPathComponent)."
         } catch {
-            connectionMessage = "Upload failed. Check the file, code, and network."
+            connectionMessage = uploadFailureMessage(for: error)
         }
     }
 
@@ -679,7 +679,7 @@ public final class AppModel {
             lastUpdated = Date()
             connectionMessage = command.successMessage
         } catch {
-            connectionMessage = "Printer rejected the \(command.rawValue) command."
+            connectionMessage = jobCommandFailureMessage(for: command, error: error)
         }
     }
 
@@ -1088,6 +1088,46 @@ public final class AppModel {
         recentFiles.removeAll { $0 == fileURL }
         recentFiles.insert(fileURL, at: 0)
         recentUploadFileURLsByPrinterID[selectedPrinter.id] = Array(recentFiles.prefix(5))
+    }
+
+    private func uploadFailureMessage(for error: Error) -> String {
+        guard let uploadError = error as? ModernPrinterUploadError else {
+            return "Upload failed. Check the file, code, and network."
+        }
+
+        switch uploadError {
+        case .fileNotFound:
+            return "Upload failed because the job file could not be found. Choose the file again."
+        case .invalidFileName:
+            return "Upload failed because the job file name is invalid. Choose a named .gcode, .gx, or .3mf file."
+        case .transportFailed:
+            return "Upload failed. Check that the printer is online and reachable on the network."
+        case .rejected(let message):
+            let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedMessage.isEmpty {
+                return "Printer rejected the upload. Check the code and printer status."
+            }
+
+            return "Printer rejected the upload: \(trimmedMessage)."
+        }
+    }
+
+    private func jobCommandFailureMessage(for command: PrinterJobCommand, error: Error) -> String {
+        guard let commandError = error as? ModernPrinterCommandError else {
+            return "Could not send \(command.rawValue). Check the code and network."
+        }
+
+        switch commandError {
+        case .transportFailed:
+            return "Could not send \(command.rawValue). Check that the printer is online and reachable on the network."
+        case .rejected(let message):
+            let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedMessage.isEmpty {
+                return "Printer rejected \(command.rawValue). Check the current job state."
+            }
+
+            return "Printer rejected \(command.rawValue): \(trimmedMessage)."
+        }
     }
 
     private func merge(info: PrinterInfo, intoPrinterID printerID: UUID) {

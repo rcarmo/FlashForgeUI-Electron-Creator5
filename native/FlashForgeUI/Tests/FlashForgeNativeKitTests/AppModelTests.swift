@@ -1045,6 +1045,64 @@ import Testing
 }
 
 @MainActor
+@Test func rejectedJobCommandShowsPrinterReason() async {
+    let commandClient = FailingCommandClient(error: ModernPrinterCommandError.rejected("Printer is not printing"))
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .printing,
+        nozzleTemperature: TemperatureReading(current: 221),
+        bedTemperature: TemperatureReading(current: 58),
+        activeJob: PrintJobSnapshot(fileName: "benchy.3mf", progress: 0.4)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        commandClient: commandClient,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+
+    await model.sendSelectedPrinterJobCommand(.pause)
+
+    #expect(model.connectionMessage == "Printer rejected pause: Printer is not printing.")
+    #expect(model.isSendingJobCommand == false)
+    #expect(model.activeJobCommand == nil)
+}
+
+@MainActor
+@Test func transportJobCommandFailureSuggestsNetworkCheck() async {
+    let commandClient = FailingCommandClient(error: ModernPrinterCommandError.transportFailed)
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .paused,
+        nozzleTemperature: TemperatureReading(current: 221),
+        bedTemperature: TemperatureReading(current: 58),
+        activeJob: PrintJobSnapshot(fileName: "benchy.3mf", progress: 0.4)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        commandClient: commandClient,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+
+    await model.sendSelectedPrinterJobCommand(.resume)
+
+    #expect(model.connectionMessage == "Could not send resume. Check that the printer is online and reachable on the network.")
+}
+
+@MainActor
 @Test func selectedJobCommandReadinessExplainsMissingCheckCode() async {
     let commandClient = RecordingCommandClient()
     let printer = PrinterSnapshot(
@@ -1162,6 +1220,63 @@ import Testing
     #expect(uploadClient.lastCheckCode == "123456")
     #expect(model.selectedPrinter?.status == .printing)
     #expect(model.selectedPrinter?.activeJob?.fileName == "benchy.gcode")
+}
+
+@MainActor
+@Test func rejectedUploadShowsPrinterReason() async {
+    let uploadClient = FailingUploadClient(error: ModernPrinterUploadError.rejected("Check code is invalid"))
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        uploadClient: uploadClient,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+    model.selectUploadFile(URL(fileURLWithPath: "/tmp/benchy.gcode"))
+
+    await model.uploadSelectedJob()
+
+    #expect(model.connectionMessage == "Printer rejected the upload: Check code is invalid.")
+    #expect(model.isUploadingJob == false)
+}
+
+@MainActor
+@Test func missingUploadFileShowsRecoveryMessage() async {
+    let uploadClient = FailingUploadClient(error: ModernPrinterUploadError.fileNotFound)
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        uploadClient: uploadClient,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+    model.selectUploadFile(URL(fileURLWithPath: "/tmp/missing.gcode"))
+
+    await model.uploadSelectedJob()
+
+    #expect(model.connectionMessage == "Upload failed because the job file could not be found. Choose the file again.")
 }
 
 @MainActor
@@ -1605,6 +1720,24 @@ private final class RecordingCommandClient: ModernPrinterCommandClient, @uncheck
     }
 }
 
+private final class FailingCommandClient: ModernPrinterCommandClient, @unchecked Sendable {
+    let error: Error
+
+    init(error: Error) {
+        self.error = error
+    }
+
+    func sendJobCommand(
+        _ command: PrinterJobCommand,
+        host: String,
+        port: UInt16,
+        serialNumber: String,
+        checkCode: String
+    ) async throws {
+        throw error
+    }
+}
+
 private final class RecordingUploadClient: ModernPrinterUploadClient, @unchecked Sendable {
     var lastRequest: PrinterUploadRequest?
     var lastHost: String?
@@ -1624,6 +1757,24 @@ private final class RecordingUploadClient: ModernPrinterUploadClient, @unchecked
         lastPort = port
         lastSerialNumber = serialNumber
         lastCheckCode = checkCode
+    }
+}
+
+private final class FailingUploadClient: ModernPrinterUploadClient, @unchecked Sendable {
+    let error: Error
+
+    init(error: Error) {
+        self.error = error
+    }
+
+    func upload(
+        _ uploadRequest: PrinterUploadRequest,
+        host: String,
+        port: UInt16,
+        serialNumber: String,
+        checkCode: String
+    ) async throws {
+        throw error
     }
 }
 
