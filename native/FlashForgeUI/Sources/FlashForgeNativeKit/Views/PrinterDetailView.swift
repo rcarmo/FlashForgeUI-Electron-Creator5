@@ -314,6 +314,10 @@ public struct PrinterDetailView: View {
 
             Toggle("Level before print", isOn: $model.levelingBeforePrint)
 
+            Label(model.selectedUploadActionSummary, systemImage: "checklist")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
             Button {
                 Task { await model.uploadSelectedJob() }
             } label: {

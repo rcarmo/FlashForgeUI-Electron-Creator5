@@ -1471,9 +1471,16 @@ import Testing
     model.selectUploadFile(firstFileURL)
     #expect(model.selectedUploadFileURL == firstFileURL)
     #expect(model.selectedUploadFileName == "studio.gcode")
+    #expect(model.selectedUploadActionSummary == "Upload, level the bed, then start printing.")
     #expect(model.canClearSelectedUploadFile == true)
     #expect(model.selectedUploadReadinessMessage == "Enter the printer check code to upload a job.")
     #expect(model.canUploadSelectedJob == false)
+
+    model.levelingBeforePrint = false
+    #expect(model.selectedUploadActionSummary == "Upload, then start printing without bed leveling.")
+
+    model.startPrintAfterUpload = false
+    #expect(model.selectedUploadActionSummary == "Upload only. The print will stay on the printer until you start it.")
 
     model.selection = .printer(secondPrinter.id)
     #expect(model.selectedUploadFileURL == nil)

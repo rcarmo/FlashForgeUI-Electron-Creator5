@@ -432,6 +432,16 @@ public final class AppModel {
         selectedUploadFileURL?.lastPathComponent ?? "No file selected"
     }
 
+    public var selectedUploadActionSummary: String {
+        if startPrintAfterUpload {
+            return levelingBeforePrint
+                ? "Upload, level the bed, then start printing."
+                : "Upload, then start printing without bed leveling."
+        }
+
+        return "Upload only. The print will stay on the printer until you start it."
+    }
+
     public var canClearSelectedUploadFile: Bool {
         selectedUploadFileURL != nil
     }
