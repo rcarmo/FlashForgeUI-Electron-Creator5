@@ -4,10 +4,16 @@ public struct DashboardView: View {
     @AppStorage("statusRefreshIntervalSeconds") private var statusRefreshIntervalSeconds = 15
     @Bindable private var model: AppModel
     private let onAddPrinter: () -> Void
+    private let onShowPrinter: (PrinterSnapshot) -> Void
 
-    public init(model: AppModel, onAddPrinter: @escaping () -> Void = {}) {
+    public init(
+        model: AppModel,
+        onAddPrinter: @escaping () -> Void = {},
+        onShowPrinter: @escaping (PrinterSnapshot) -> Void = { _ in }
+    ) {
         self.model = model
         self.onAddPrinter = onAddPrinter
+        self.onShowPrinter = onShowPrinter
     }
 
     public var body: some View {
@@ -157,6 +163,7 @@ public struct DashboardView: View {
                 ForEach(model.overviewPrinters) { printer in
                     Button {
                         model.selection = .printer(printer.id)
+                        onShowPrinter(printer)
                     } label: {
                         PrinterSummaryRow(
                             printer: printer,
