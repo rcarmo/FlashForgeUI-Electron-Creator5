@@ -21,10 +21,12 @@ swift test
 ./script/build_and_run.sh --verify
 ```
 
-## iPad and iOS Readiness
+## Future iPad and iOS Readiness
 
 The reusable app layer lives in `FlashForgeNativeKit`, and `FlashForgeMobile`
-keeps an AppKit-free app shell compiling against it. Check both with:
+keeps an AppKit-free app shell available for later mobile work. Mobile compile
+health is not part of the Mac beta gate; check it only when intentionally
+working on iPad/iOS:
 
 ```bash
 ./script/verify_ios_kit.sh

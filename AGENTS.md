@@ -1,6 +1,6 @@
 # FlashForgeUI Native Port Development Guide
 
-**Last Updated:** 2026-07-07 18:49 EDT (America/New_York)
+**Last Updated:** 2026-07-07 18:55 EDT (America/New_York)
 
 This file provides guidance to coding agents working in this repository.
 
@@ -12,7 +12,8 @@ The active project is the native Swift port of FlashForgeUI:
 
 - Finish a beta-quality macOS app first.
 - Keep the app useful for local users managing FlashForge printers.
-- Preserve a shared Swift foundation that can later move to iPad and iOS.
+- Keep a future iPad/iOS port in mind, but do not spend Mac beta effort keeping
+  iPad/iOS current. Mobile can go stale until the Mac beta goal is met.
 - Do not track headless, WebUI, server, cloud, Discord, Spoolman, or other
   ancillary Electron-era features as native beta work unless the user explicitly
   reopens that scope.
@@ -50,17 +51,60 @@ Swift products:
   macOS now and iPad/iOS later.
 - `FlashForgeUI`: macOS app lifecycle, menus, commands, foreground activation,
   packaging, and desktop-specific affordances.
-- `FlashForgeMobile`: iPad/iOS-oriented shell that keeps the shared kit
-  compiling without AppKit.
+- `FlashForgeMobile`: iPad/iOS-oriented shell for future work. It is not part
+  of the Mac beta gate and may lag while local Mac printer workflows stabilize.
 
 Important native references:
 
 - `native/FlashForgeUI/Docs/PORT_STATUS.md`: current platform coverage,
   functionality matrix, Mac beta gate, and next slices.
 - `native/FlashForgeUI/Docs/UI.md`: local incorporation of
-  `praeclarum/ui.md` design rules.
-- `native/FlashForgeUI/README.md`: build, run, package, and iOS readiness
-  commands.
+  `praeclarum/ui.md` design rules for FlashForgeUI.
+- `https://github.com/praeclarum/ui.md/blob/main/UI.md`: upstream UI
+  guideline source. Re-check it when changing native UI behavior or when the
+  local UI contract drifts.
+- `native/FlashForgeUI/README.md`: build, run, package, and optional future
+  iOS-readiness commands.
+
+---
+
+## UI Guideline References
+
+The native app follows `praeclarum/ui.md` as a product constraint, not an
+optional styling note. Its prime directive is that a UI is good when the program
+behaves the way the user expected it to behave. For this printer app, that
+means every screen and action should optimize user control, predictability, and
+task completion.
+
+Use these upstream rules when implementing or reviewing native UI:
+
+- Match the user's mental model. A printer is the primary object; protocol
+  details, polling mechanics, cache state, and backend choices should stay out
+  of the UI unless they help recovery.
+- Design around activities, not feature lists. Prioritize discover, add,
+  identify, refresh status, choose a job file, upload, pause/resume/cancel, open
+  camera, and recover from mistakes.
+- Reduce decisions. Do not expose preferences because the implementation has
+  multiple code paths. Choose safe defaults unless the choice is central to
+  managing printers or harmless personalization.
+- Be consistent. Prefer native SwiftUI/macOS controls, labels, shortcuts, menu
+  placement, forms, file opening, drag and drop, and confirmation behavior.
+- Make actions visually obvious. Clickable controls must look clickable,
+  disabled actions need understandable readiness text, and primary printer
+  actions should be visible in the detail pane, toolbar, or menus.
+- Respect limited attention and imperfect motor control. Keep copy short, avoid
+  long instructional dialogs, use full-size targets, and provide keyboard paths
+  for repeated printer workflows.
+- Prefer recognition over recall. Show printer names, addresses, serial
+  numbers, selected job files, recent files, camera URL state, and saved check
+  code state instead of making users remember them.
+- Make errors actionable. Say what failed and what to do next; keep discovery,
+  setup, upload, status refresh, and job control recoverable.
+
+Before shipping a native UI slice, verify the upstream checklist in
+`UI.md` against the actual printer workflow, then keep
+`native/FlashForgeUI/Docs/UI.md` aligned with any local product-specific
+interpretation.
 
 ---
 
@@ -138,7 +182,8 @@ The native Mac app is not beta-complete until these local workflows are stable:
   shared kit.
 - `native/FlashForgeUI/script/build_and_run.sh`: build and launch verification.
 - `native/FlashForgeUI/script/package_app.sh`: local `.app` and zip packaging.
-- `native/FlashForgeUI/script/verify_ios_kit.sh`: iPad/iOS cross-compile check.
+- `native/FlashForgeUI/script/verify_ios_kit.sh`: optional iPad/iOS
+  cross-compile check for future mobile work.
 
 ---
 
@@ -148,8 +193,8 @@ The native Mac app is not beta-complete until these local workflows are stable:
 - Keep reusable printer logic in `FlashForgeNativeKit`.
 - Keep AppKit usage out of `FlashForgeNativeKit`; limit AppKit to the macOS
   app target when SwiftUI cannot express the required Mac behavior cleanly.
-- Keep iPad/iOS work compile-ready, but defer runtime mobile validation until
-  the Mac printer workflows are stable.
+- Prefer portable shared code when it is free, but do not block Mac beta work on
+  iPad/iOS compile-readiness. Revisit mobile after the Mac beta gate is met.
 - Use native macOS affordances: `WindowGroup`, `NavigationSplitView`,
   `Settings`, command menus, keyboard shortcuts, open panels, file importer,
   drag and drop, confirmation dialogs, and standard controls.
@@ -171,10 +216,12 @@ as the change warrants. The full native verification baseline is:
 cd native/FlashForgeUI
 env CLANG_MODULE_CACHE_PATH=.build/module-cache swift build --disable-sandbox
 env CLANG_MODULE_CACHE_PATH=.build/module-cache swift test --disable-sandbox
-./script/verify_ios_kit.sh
 ./script/package_app.sh --verify
 ./script/build_and_run.sh --verify
 ```
+
+Run `./script/verify_ios_kit.sh` only when intentionally working on the mobile
+shell or when preparing to resume the iPad/iOS port after the Mac beta.
 
 For documentation-only changes, inspect the diff and verify that references to
 removed agent-specific documents are gone.

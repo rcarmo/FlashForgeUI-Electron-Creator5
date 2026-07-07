@@ -38,8 +38,8 @@ or internal implementation exposure.
    - Prefer SwiftUI `NavigationSplitView`, `Form`, `TabView`, `Settings`,
      `CommandMenu`, `Button`, `Toggle`, `Picker`, and `fileImporter` before
      custom controls.
-   - Keep shared views and state in `FlashForgeNativeKit` so macOS, iPad, and
-     iOS can reuse the same task model.
+   - Keep shared views and state in `FlashForgeNativeKit` when it helps the
+     Mac app. Do not let future iPad/iOS reuse slow Mac beta completion.
 
 5. Make actions visually obvious.
    - Primary actions must be visible in the toolbar or printer detail pane.
@@ -96,4 +96,4 @@ Before considering a native UI slice complete, verify:
 - Are disabled actions understandable without long explanations?
 - Are confirmations reserved for destructive or hard-to-undo actions?
 - Does the UI show information the user would otherwise need to remember?
-- Does the shared kit still compile for the iPad/iOS shell after the change?
+- Did the change stay focused on the Mac printer workflow needed for beta?
