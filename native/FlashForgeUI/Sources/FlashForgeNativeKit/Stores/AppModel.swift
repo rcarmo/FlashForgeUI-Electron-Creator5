@@ -957,8 +957,7 @@ public final class AppModel {
                 connectionMessage = "\(info.displayName) reports \(info.typeName)."
             }
         } else {
-            let port = printer.commandPort.map { ":\($0)" } ?? ""
-            connectionMessage = "Could not read printer info at \(printer.address)\(port)."
+            connectionMessage = selectedPrinterIdentificationFailureMessage(for: printer)
         }
     }
 
@@ -1445,6 +1444,11 @@ public final class AppModel {
         }
 
         return "Identified \(identifiedCount) of \(targetCount) printers. Check the remaining printers' addresses and local network."
+    }
+
+    private func selectedPrinterIdentificationFailureMessage(for printer: PrinterSnapshot) -> String {
+        let port = printer.commandPort.map { ":\($0)" } ?? ""
+        return "Could not identify \(printer.name) at \(printer.address)\(port). Check that the printer is powered on and reachable on the local network."
     }
 
     private func statusRefreshFailureMessage(for printer: PrinterSnapshot, isBackground: Bool) -> String {

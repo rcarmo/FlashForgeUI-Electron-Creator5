@@ -576,6 +576,37 @@ import Testing
 }
 
 @MainActor
+@Test func connectSelectedPrinterExplainsUnreachablePrinter() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "Unknown",
+        address: "192.168.1.44",
+        commandPort: 8899,
+        status: .offline,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let bootstrapClient = RecordingBootstrapClient(
+        infosByHost: [:],
+        failingHosts: ["192.168.1.44"]
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: bootstrapClient,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+
+    await model.connectSelectedPrinter()
+
+    #expect(bootstrapClient.requestedHosts == ["192.168.1.44"])
+    #expect(model.lastPrinterInfo == nil)
+    #expect(model.selectedPrinter?.serialNumber == nil)
+    #expect(model.connectionMessage == "Could not identify Desk Printer at 192.168.1.44:8899. Check that the printer is powered on and reachable on the local network.")
+    #expect(model.isConnecting == false)
+}
+
+@MainActor
 @Test func connectKnownPrintersIdentifiesSavedProfiles() async {
     let firstID = UUID()
     let secondID = UUID()
