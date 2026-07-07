@@ -389,6 +389,9 @@ import Testing
         profileStore: store
     )
 
+    #expect(model.manualPrinterAddressPreview(for: " http://192.168.1.77:8898/detail ") == "Will save as 192.168.1.77.")
+    #expect(model.manualPrinterAddressValidationMessage(for: " http://192.168.1.77:8898/detail ") == nil)
+
     model.addManualPrinter(
         name: "",
         address: " http://192.168.1.77:8898/detail ",
@@ -409,6 +412,9 @@ import Testing
         bootstrapClient: FakeBootstrapClient(),
         profileStore: store
     )
+
+    #expect(model.manualPrinterAddressPreview(for: "printer.local:8898") == "Will save as printer.local.")
+    #expect(model.manualPrinterAddressValidationMessage(for: "http://") == "Enter a valid printer address or URL.")
 
     model.addManualPrinter(name: "Old Name", address: "printer.local:8898", checkCode: "111111")
     model.addManualPrinter(name: "New Name", address: "http://printer.local:8899/", checkCode: "222222")

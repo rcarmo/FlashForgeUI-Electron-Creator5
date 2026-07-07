@@ -28,13 +28,17 @@ public struct AddPrinterFormView: View {
                 TextField("Address or URL", text: $printerAddress)
                     .textFieldStyle(.roundedBorder)
                     .onChange(of: printerAddress) {
-                        validationMessage = nil
+                        validationMessage = model.manualPrinterAddressValidationMessage(for: printerAddress)
                     }
 
                 if let validationMessage {
                     Text(validationMessage)
                         .font(.caption)
                         .foregroundStyle(.red)
+                } else if let addressPreview = model.manualPrinterAddressPreview(for: printerAddress) {
+                    Text(addressPreview)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
 

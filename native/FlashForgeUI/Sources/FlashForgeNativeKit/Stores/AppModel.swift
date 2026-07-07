@@ -566,6 +566,25 @@ public final class AppModel {
         selectedPrinter != nil || printers.count == 1
     }
 
+    public func manualPrinterAddressPreview(for address: String) -> String? {
+        guard let normalizedAddress = normalizedManualPrinterAddress(address) else {
+            return nil
+        }
+
+        return "Will save as \(normalizedAddress)."
+    }
+
+    public func manualPrinterAddressValidationMessage(for address: String) -> String? {
+        let trimmedAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedAddress.isEmpty else {
+            return nil
+        }
+
+        return normalizedManualPrinterAddress(address) == nil
+            ? "Enter a valid printer address or URL."
+            : nil
+    }
+
     public func start(discoverOnLaunch: Bool) async {
         guard !hasStarted else {
             return
