@@ -151,7 +151,7 @@ public struct DashboardView: View {
                 .font(.title2.weight(.semibold))
 
             if model.printers.isEmpty {
-                EmptyDetailView(message: "No printers discovered yet.")
+                emptyPrinterState
                     .frame(maxWidth: .infinity, minHeight: 180)
             } else {
                 ForEach(model.overviewPrinters) { printer in
@@ -162,6 +162,26 @@ public struct DashboardView: View {
                     }
                     .buttonStyle(PrinterSummaryButtonStyle())
                     .accessibilityHint("Opens printer details")
+                }
+            }
+        }
+    }
+
+    private var emptyPrinterState: some View {
+        ContentUnavailableView {
+            Label("No Printers Yet", systemImage: "printer")
+        } description: {
+            Text("Discover printers on your network or add one by address.")
+        } actions: {
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    discoverButton
+                    addPrinterButton
+                }
+
+                VStack {
+                    discoverButton
+                    addPrinterButton
                 }
             }
         }
