@@ -7,6 +7,7 @@ public struct PrinterDetailView: View {
     @AppStorage("statusRefreshIntervalSeconds") private var statusRefreshIntervalSeconds = 15
     @State private var showsCancelConfirmation = false
     @State private var showsUploadImporter = false
+    @State private var isUploadDropTargeted = false
     @Bindable private var model: AppModel
     private let printer: PrinterSnapshot
 
@@ -251,15 +252,7 @@ public struct PrinterDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline) {
-                    uploadControls
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    uploadControls
-                }
-            }
+            uploadDropZone
 
             if let uploadReadinessMessage = model.selectedUploadReadinessMessage {
                 Label(uploadReadinessMessage, systemImage: "info.circle")
@@ -311,6 +304,50 @@ public struct PrinterDetailView: View {
             .controlSize(.large)
             .disabled(!model.canUploadSelectedJob)
         }
+    }
+
+    private var uploadDropZone: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    uploadControls
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    uploadControls
+                }
+            }
+
+            uploadDropHint
+        }
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let fileURL = urls.first else {
+                return false
+            }
+
+            return model.openJobFile(fileURL)
+        } isTargeted: { isTargeted in
+            isUploadDropTargeted = isTargeted
+        }
+    }
+
+    private var uploadDropHint: some View {
+        Label(isUploadDropTargeted ? "Release job file" : "Drop job file", systemImage: "tray.and.arrow.down")
+            .font(.callout)
+            .foregroundStyle(isUploadDropTargeted ? .primary : .secondary)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(
+                isUploadDropTargeted ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.08),
+                in: RoundedRectangle(cornerRadius: 8)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(
+                        isUploadDropTargeted ? Color.accentColor : Color.secondary.opacity(0.35),
+                        style: StrokeStyle(lineWidth: 1, dash: [4, 4])
+                    )
+            }
     }
 
     private var telemetrySection: some View {
