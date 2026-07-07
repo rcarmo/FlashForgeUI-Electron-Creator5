@@ -84,7 +84,7 @@ public struct SettingsView: View {
             }
 
             Section("Add Printer") {
-                AddPrinterFormView(model: model, finishTitle: "Save")
+                AddPrinterFormView(model: model, showsFinishButton: false)
                     .frame(minHeight: 220)
             }
 

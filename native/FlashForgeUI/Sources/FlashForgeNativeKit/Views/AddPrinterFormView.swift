@@ -7,15 +7,18 @@ public struct AddPrinterFormView: View {
     @State private var validationMessage: String?
     @Bindable private var model: AppModel
     private let finishTitle: String
+    private let showsFinishButton: Bool
     private let onFinish: () -> Void
 
     public init(
         model: AppModel,
         finishTitle: String = "Done",
+        showsFinishButton: Bool = true,
         onFinish: @escaping () -> Void = {}
     ) {
         self.model = model
         self.finishTitle = finishTitle
+        self.showsFinishButton = showsFinishButton
         self.onFinish = onFinish
     }
 
@@ -58,16 +61,18 @@ public struct AddPrinterFormView: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canSubmitPrinter)
 
-                Spacer()
+                if showsFinishButton {
+                    Spacer()
 
-                Button(finishTitle) {
-                    if printerAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        onFinish()
-                    } else {
-                        addPrinter(clearOnSuccess: false)
+                    Button(finishTitle) {
+                        if printerAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            onFinish()
+                        } else {
+                            addPrinter(clearOnSuccess: false)
+                        }
                     }
+                    .disabled(!canSubmitPrinter && !trimmedAddress.isEmpty)
                 }
-                .disabled(!canSubmitPrinter && !trimmedAddress.isEmpty)
             }
         }
         .padding(.vertical, 4)
