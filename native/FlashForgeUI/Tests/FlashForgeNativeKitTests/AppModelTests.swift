@@ -1766,6 +1766,43 @@ import Testing
 }
 
 @MainActor
+@Test func httpUploadFailureShowsStatusAndPrinterReason() async throws {
+    let uploadClient = FailingUploadClient(error: ModernPrinterUploadError.httpStatus(403, "Check code is invalid"))
+    let directoryURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FlashForgeNativeTests-\(UUID().uuidString)", isDirectory: true)
+    let fileURL = directoryURL.appendingPathComponent("benchy.gcode")
+    defer {
+        try? FileManager.default.removeItem(at: directoryURL)
+    }
+    try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+    try Data("G1 X1 Y1\n".utf8).write(to: fileURL)
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        uploadClient: uploadClient,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+    model.selectUploadFile(fileURL)
+
+    await model.uploadSelectedJob()
+
+    #expect(model.connectionMessage == "Upload failed with HTTP 403: Check code is invalid.")
+    #expect(model.isUploadingJob == false)
+}
+
+@MainActor
 @Test func missingUploadFileShowsRecoveryMessage() async {
     let uploadClient = FailingUploadClient(error: ModernPrinterUploadError.fileNotFound)
     let printer = PrinterSnapshot(

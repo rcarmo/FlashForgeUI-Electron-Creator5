@@ -1450,6 +1450,15 @@ public final class AppModel {
             return "Upload failed because the job file name is invalid. Choose a named .gcode, .gx, or .3mf file."
         case .transportFailed:
             return "Upload failed. Check that the printer is online and reachable on the network."
+        case .httpStatus(let statusCode, let message):
+            let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if trimmedMessage.isEmpty {
+                return "Upload failed with HTTP \(statusCode). Check printer status, check code, and network."
+            }
+
+            return "Upload failed with HTTP \(statusCode): \(trimmedMessage)."
+        case .invalidResponse:
+            return "Upload failed because the printer returned an unexpected response."
         case .rejected(let message):
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedMessage.isEmpty {

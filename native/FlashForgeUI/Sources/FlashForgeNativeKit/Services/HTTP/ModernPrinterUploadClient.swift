@@ -67,15 +67,49 @@ public struct URLSessionModernPrinterUploadClient: ModernPrinterUploadClient {
         }
 
         let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200..<300).contains(httpResponse.statusCode) else {
-            throw ModernPrinterUploadError.transportFailed
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ModernPrinterUploadError.invalidResponse
         }
 
-        let apiResponse = try JSONDecoder().decode(ModernPrinterUploadResponse.self, from: data)
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            throw ModernPrinterUploadError.httpStatus(
+                httpResponse.statusCode,
+                Self.failureMessage(from: data)
+            )
+        }
+
+        let apiResponse: ModernPrinterUploadResponse
+        do {
+            apiResponse = try JSONDecoder().decode(ModernPrinterUploadResponse.self, from: data)
+        } catch {
+            throw ModernPrinterUploadError.invalidResponse
+        }
+
         guard apiResponse.isSuccess else {
             throw ModernPrinterUploadError.rejected(apiResponse.message)
         }
+    }
+
+    private static func failureMessage(from data: Data) -> String? {
+        if let apiResponse = try? JSONDecoder().decode(ModernPrinterUploadResponse.self, from: data) {
+            let trimmedMessage = apiResponse.message.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedMessage.isEmpty {
+                return trimmedMessage
+            }
+        }
+
+        let rawMessage = String(decoding: data, as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !rawMessage.isEmpty else {
+            return nil
+        }
+
+        if rawMessage.count > 160 {
+            return String(rawMessage.prefix(160)) + "..."
+        }
+
+        return rawMessage
     }
 }
 
@@ -155,6 +189,8 @@ public enum ModernPrinterUploadError: Error, Equatable {
     case fileNotFound
     case invalidFileName
     case transportFailed
+    case httpStatus(Int, String?)
+    case invalidResponse
     case rejected(String)
 }
 
