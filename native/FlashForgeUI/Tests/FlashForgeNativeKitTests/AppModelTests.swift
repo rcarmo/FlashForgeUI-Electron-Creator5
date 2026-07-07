@@ -1140,6 +1140,7 @@ import Testing
 
     #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == "Select a printer first.")
     #expect(model.canSendSelectedPrinterJobCommand(.pause) == false)
+    #expect(model.selectedJobControlSummary == nil)
 
     await model.sendSelectedPrinterJobCommand(.pause)
 
@@ -1171,6 +1172,7 @@ import Testing
 
     #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == nil)
     #expect(model.canSendSelectedPrinterJobCommand(.pause) == true)
+    #expect(model.selectedJobControlSummary == "Pause and Cancel available.")
 
     await model.sendSelectedPrinterJobCommand(.pause)
 
@@ -1204,6 +1206,8 @@ import Testing
     )
     model.selection = .printer(printer.id)
     model.checkCode = "123456"
+
+    #expect(model.selectedJobControlSummary == "Resume and Cancel available.")
 
     await model.sendSelectedPrinterJobCommand(.cancel)
 

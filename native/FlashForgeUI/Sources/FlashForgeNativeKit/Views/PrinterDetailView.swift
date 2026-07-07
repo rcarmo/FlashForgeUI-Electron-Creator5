@@ -160,6 +160,11 @@ public struct PrinterDetailView: View {
                     .font(.headline)
                 ProgressView(value: job.progress)
                 jobProgressText(job)
+                if let jobControlSummary = model.selectedJobControlSummary {
+                    Label(jobControlSummary, systemImage: "switch.2")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
                 jobCommandButtons
                 if let jobCommandReadinessMessage {
                     Label(jobCommandReadinessMessage, systemImage: "info.circle")

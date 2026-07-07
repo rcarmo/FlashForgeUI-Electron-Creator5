@@ -289,6 +289,22 @@ public final class AppModel {
         }
     }
 
+    public var selectedJobControlSummary: String? {
+        guard selectedPrinter?.activeJob != nil else {
+            return nil
+        }
+
+        let availableCommands = [PrinterJobCommand.pause, .resume, .cancel]
+            .filter { availableJobCommands.contains($0) }
+
+        guard !availableCommands.isEmpty else {
+            return "No job controls are available for this printer state."
+        }
+
+        let labels = availableCommands.map(\.displayName)
+        return "\(NativeFormatters.list(labels)) available."
+    }
+
     public func canSendSelectedPrinterJobCommand(_ command: PrinterJobCommand) -> Bool {
         selectedPrinterJobCommandReadinessMessage(for: command) == nil
     }

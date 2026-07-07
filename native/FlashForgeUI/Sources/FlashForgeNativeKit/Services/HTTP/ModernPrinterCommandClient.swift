@@ -26,6 +26,17 @@ public enum PrinterJobCommand: String, CaseIterable, Codable, Sendable {
             "Print cancelled."
         }
     }
+
+    public var displayName: String {
+        switch self {
+        case .pause:
+            "Pause"
+        case .resume:
+            "Resume"
+        case .cancel:
+            "Cancel"
+        }
+    }
 }
 
 public protocol ModernPrinterCommandClient: Sendable {

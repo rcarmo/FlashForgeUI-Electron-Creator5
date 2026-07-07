@@ -17,6 +17,20 @@ public enum NativeFormatters {
         "\(count) \(count == 1 ? singular : plural)"
     }
 
+    public static func list(_ values: [String]) -> String {
+        switch values.count {
+        case 0:
+            return ""
+        case 1:
+            return values[0]
+        case 2:
+            return "\(values[0]) and \(values[1])"
+        default:
+            let leadingValues = values.dropLast().joined(separator: ", ")
+            return "\(leadingValues), and \(values[values.count - 1])"
+        }
+    }
+
     public static func duration(_ interval: TimeInterval?) -> String {
         guard let interval else {
             return "Unknown"
