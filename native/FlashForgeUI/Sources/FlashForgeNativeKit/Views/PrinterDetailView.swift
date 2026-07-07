@@ -350,9 +350,14 @@ public struct PrinterDetailView: View {
             if model.recentUploadFileURLs.isEmpty {
                 Text("No Recent Files")
             } else {
-                ForEach(model.recentUploadFileURLs, id: \.self) { fileURL in
-                    Button(NativeFormatters.jobFileMenuTitle(fileURL)) {
-                        _ = model.openJobFile(fileURL)
+                ForEach(model.recentUploadFileSummaries) { recentFile in
+                    Button {
+                        _ = model.openJobFile(recentFile.fileURL)
+                    } label: {
+                        Label(
+                            recentFile.menuTitle,
+                            systemImage: recentFile.isSelected ? "checkmark" : "doc"
+                        )
                     }
                 }
 
@@ -371,11 +376,10 @@ public struct PrinterDetailView: View {
 
     private var selectedUploadFileSummary: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(model.selectedUploadFileName)
+            Text(model.selectedUploadFileSummary?.fileName ?? "No file selected")
                 .lineLimit(1)
 
-            if let fileURL = model.selectedUploadFileURL,
-               let location = NativeFormatters.jobFileLocation(fileURL) {
+            if let location = model.selectedUploadFileSummary?.location {
                 Text(location)
                     .font(.caption)
                     .foregroundStyle(.secondary)

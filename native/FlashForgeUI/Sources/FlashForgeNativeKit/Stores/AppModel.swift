@@ -456,6 +456,10 @@ public final class AppModel {
         selectedUploadFileURL?.lastPathComponent ?? "No file selected"
     }
 
+    public var selectedUploadFileSummary: JobFileSummary? {
+        selectedUploadFileURL.map { JobFileSummary(fileURL: $0, isSelected: true) }
+    }
+
     public var selectedPendingJobSummary: String? {
         guard selectedUploadFileURL != nil else {
             return nil
@@ -484,6 +488,12 @@ public final class AppModel {
         }
 
         return recentUploadFileURLsByPrinterID[selectedPrinter.id] ?? []
+    }
+
+    public var recentUploadFileSummaries: [JobFileSummary] {
+        recentUploadFileURLs.map { fileURL in
+            JobFileSummary(fileURL: fileURL, isSelected: fileURL == selectedUploadFileURL)
+        }
     }
 
     public var canClearRecentUploadFiles: Bool {

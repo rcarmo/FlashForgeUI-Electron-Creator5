@@ -1476,6 +1476,9 @@ import Testing
     model.selectUploadFile(firstFileURL)
     #expect(model.selectedUploadFileURL == firstFileURL)
     #expect(model.selectedUploadFileName == "studio.gcode")
+    #expect(model.selectedUploadFileSummary?.fileName == "studio.gcode")
+    #expect(model.selectedUploadFileSummary?.location == "/tmp")
+    #expect(model.selectedUploadFileSummary?.isSelected == true)
     #expect(model.selectedPendingJobSummary == "studio.gcode selected for upload.")
     #expect(model.selectedUploadActionSummary == "Upload, level the bed, then start printing.")
     #expect(model.canClearSelectedUploadFile == true)
@@ -1503,6 +1506,7 @@ import Testing
     model.clearSelectedUploadFile()
     #expect(model.selectedUploadFileURL == nil)
     #expect(model.selectedUploadFileName == "No file selected")
+    #expect(model.selectedUploadFileSummary == nil)
     #expect(model.selectedPendingJobSummary == nil)
     #expect(model.canClearSelectedUploadFile == false)
     #expect(model.selectedUploadReadinessMessage == "Choose a job file first.")
@@ -1548,6 +1552,11 @@ import Testing
     model.selectUploadFile(secondFileURL)
     model.selectUploadFile(firstFileURL)
     #expect(model.recentUploadFileURLs == [firstFileURL, secondFileURL])
+    #expect(model.recentUploadFileSummaries.map(\.menuTitle) == [
+        "studio.gcode - tmp",
+        "plate.3mf - tmp"
+    ])
+    #expect(model.recentUploadFileSummaries.map(\.isSelected) == [true, false])
     #expect(model.canClearRecentUploadFiles == true)
 
     model.selection = .printer(secondPrinter.id)
