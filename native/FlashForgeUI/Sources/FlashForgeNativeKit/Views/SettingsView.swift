@@ -110,6 +110,11 @@ public struct SettingsView: View {
                         .textFieldStyle(.roundedBorder)
                         .disabled(!model.customCameraEnabled)
 
+                    Button("Reset Camera Settings") {
+                        model.resetSelectedCameraSettings()
+                    }
+                    .disabled(!model.canResetSelectedCameraSettings)
+
                     if let validationMessage = customCameraValidationMessage {
                         Label(validationMessage, systemImage: "exclamationmark.triangle")
                             .font(.callout)

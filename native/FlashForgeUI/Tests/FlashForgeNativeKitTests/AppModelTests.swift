@@ -311,6 +311,15 @@ import Testing
     #expect(store.document.profiles.first?.cameraUserConfig?.customCameraURL == "rtsp://camera.local/live")
     #expect(model.selectedCameraStreamConfig.sourceType == .custom)
     #expect(model.selectedCameraStreamConfig.streamType == .rtsp)
+    #expect(model.canResetSelectedCameraSettings == true)
+
+    model.resetSelectedCameraSettings()
+
+    #expect(model.customCameraEnabled == false)
+    #expect(model.customCameraURL == "")
+    #expect(model.canResetSelectedCameraSettings == false)
+    #expect(store.document.profiles.first?.cameraUserConfig == nil)
+    #expect(model.connectionMessage == "Camera settings reset for this printer.")
 }
 
 @MainActor

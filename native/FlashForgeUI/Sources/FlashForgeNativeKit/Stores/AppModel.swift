@@ -542,6 +542,24 @@ public final class AppModel {
         selectedCameraStreamURL != nil
     }
 
+    public var canResetSelectedCameraSettings: Bool {
+        guard selectedPrinter != nil else {
+            return false
+        }
+
+        return customCameraEnabled || !customCameraURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    public func resetSelectedCameraSettings() {
+        guard canResetSelectedCameraSettings else {
+            return
+        }
+
+        customCameraEnabled = false
+        customCameraURL = ""
+        connectionMessage = "Camera settings reset for this printer."
+    }
+
     public var canRemoveSelectedPrinter: Bool {
         guard let selectedPrinter else {
             return false
