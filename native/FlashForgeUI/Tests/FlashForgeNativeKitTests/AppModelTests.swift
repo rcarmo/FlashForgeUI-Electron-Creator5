@@ -78,10 +78,20 @@ import Testing
     #expect(model.selectedPrinter?.status == .offline)
     #expect(model.checkCode == "654321")
     #expect(model.hasSelectedPrinterCheckCode == true)
+    #expect(model.canClearSelectedPrinterCheckCode == true)
     #expect(model.selectedPrinterCheckCodeStatusMessage == "Check code saved for this printer.")
     #expect(model.customCameraEnabled == true)
     #expect(model.customCameraURL == "http://camera.local:8080/?action=stream")
     #expect(model.selectedCameraStreamConfig.sourceType == .custom)
+
+    model.clearSelectedPrinterCheckCode()
+
+    #expect(model.checkCode == "")
+    #expect(model.hasSelectedPrinterCheckCode == false)
+    #expect(model.canClearSelectedPrinterCheckCode == false)
+    #expect(model.selectedPrinterCheckCodeStatusMessage == "Needed for refresh, upload, and job controls.")
+    #expect(store.document.profiles.first?.checkCode == nil)
+    #expect(model.connectionMessage == "Check code cleared for this printer.")
 }
 
 @MainActor

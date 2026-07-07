@@ -93,6 +93,11 @@ public struct SettingsView: View {
                     SecureField("Check code", text: $model.checkCode)
                         .textFieldStyle(.roundedBorder)
 
+                    Button("Forget Check Code") {
+                        model.clearSelectedPrinterCheckCode()
+                    }
+                    .disabled(!model.canClearSelectedPrinterCheckCode)
+
                     if let checkCodeStatusMessage = model.selectedPrinterCheckCodeStatusMessage {
                         Label(
                             checkCodeStatusMessage,

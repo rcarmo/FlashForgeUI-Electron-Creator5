@@ -198,6 +198,19 @@ public final class AppModel {
             : "Needed for refresh, upload, and job controls."
     }
 
+    public var canClearSelectedPrinterCheckCode: Bool {
+        hasSelectedPrinterCheckCode
+    }
+
+    public func clearSelectedPrinterCheckCode() {
+        guard canClearSelectedPrinterCheckCode else {
+            return
+        }
+
+        checkCode = ""
+        connectionMessage = "Check code cleared for this printer."
+    }
+
     public var activePrintCount: Int {
         printers.filter { $0.activeJob != nil }.count
     }
