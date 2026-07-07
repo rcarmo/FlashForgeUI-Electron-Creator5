@@ -807,6 +807,49 @@ import Testing
 }
 
 @MainActor
+@Test func selectedStatusRecencyIsTrackedPerPrinter() async {
+    let firstPrinter = PrinterSnapshot(
+        name: "Studio",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-FIRST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let secondPrinter = PrinterSnapshot(
+        name: "Workshop",
+        model: "Adventurer 5M Pro",
+        address: "192.168.1.45",
+        serialNumber: "SN-SECOND",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 29),
+        bedTemperature: TemperatureReading(current: 27)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        modernClient: RecordingModernClient(status: .ready),
+        printers: [firstPrinter, secondPrinter]
+    )
+
+    model.selection = .printer(firstPrinter.id)
+    model.checkCode = "111111"
+    #expect(model.selectedPrinterStatusRecencySummary == "Status not refreshed yet.")
+
+    await model.refreshSelectedPrinterStatus()
+
+    #expect(model.lastUpdated != nil)
+    #expect(model.selectedPrinterStatusRecencySummary != "Status not refreshed yet.")
+
+    model.selection = .printer(secondPrinter.id)
+
+    #expect(model.selectedPrinterStatusRecencySummary == "Status not refreshed yet.")
+}
+
+@MainActor
 @Test func refreshSelectedPrinterStatusExplainsMissingSerialNumber() async {
     let client = RecordingModernClient(status: .ready)
     let printer = PrinterSnapshot(

@@ -123,6 +123,7 @@ public final class AppModel {
     private var cameraConfigsByPrinterID: [UUID: CameraUserConfig]
     private var printerInfoByPrinterID: [UUID: PrinterInfo]
     private var modernStatusesByPrinterID: [UUID: ModernPrinterStatus]
+    private var statusUpdatedAtByPrinterID: [UUID: Date]
     private var uploadFileURLsByPrinterID: [UUID: URL]
     private var recentUploadFileURLsByPrinterID: [UUID: [URL]]
     private var pendingOpenedJobFileURL: URL?
@@ -164,6 +165,7 @@ public final class AppModel {
         self.cameraConfigsByPrinterID = [:]
         self.printerInfoByPrinterID = [:]
         self.modernStatusesByPrinterID = [:]
+        self.statusUpdatedAtByPrinterID = [:]
         self.uploadFileURLsByPrinterID = [:]
         self.recentUploadFileURLsByPrinterID = [:]
         self.pendingOpenedJobFileURL = nil
@@ -264,15 +266,15 @@ public final class AppModel {
     }
 
     public var selectedPrinterStatusRecencySummary: String? {
-        guard selectedPrinter != nil else {
+        guard let printer = selectedPrinter else {
             return nil
         }
 
-        guard lastUpdated != nil else {
+        guard let lastSelectedStatusUpdate = statusUpdatedAtByPrinterID[printer.id] else {
             return "Status not refreshed yet."
         }
 
-        return "Updated \(NativeFormatters.relativeUpdate(lastUpdated))"
+        return "Updated \(NativeFormatters.relativeUpdate(lastSelectedStatusUpdate))"
     }
 
     public var availableJobCommands: Set<PrinterJobCommand> {
@@ -798,6 +800,7 @@ public final class AppModel {
         cameraConfigsByPrinterID.removeValue(forKey: removedPrinterID)
         printerInfoByPrinterID.removeValue(forKey: removedPrinterID)
         modernStatusesByPrinterID.removeValue(forKey: removedPrinterID)
+        statusUpdatedAtByPrinterID.removeValue(forKey: removedPrinterID)
         uploadFileURLsByPrinterID.removeValue(forKey: removedPrinterID)
         recentUploadFileURLsByPrinterID.removeValue(forKey: removedPrinterID)
         saveProfiles()
@@ -1128,7 +1131,9 @@ public final class AppModel {
             )
             modernStatusesByPrinterID[printer.id] = status
             merge(status: status, intoPrinterID: printer.id)
-            lastUpdated = Date()
+            let updatedAt = Date()
+            statusUpdatedAtByPrinterID[printer.id] = updatedAt
+            lastUpdated = updatedAt
             saveProfiles()
             if announcesProgress || reportsBackgroundFailure {
                 connectionMessage = "\(status.displayName) status is \(status.state.rawValue)."
