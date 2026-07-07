@@ -579,6 +579,40 @@ import Testing
 }
 
 @MainActor
+@Test func connectSelectedPrinterRefreshesStatusWhenCheckCodeIsSaved() async {
+    let modernClient = RecordingModernClient(status: .printing)
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "Unknown",
+        address: "192.168.1.44",
+        commandPort: 8899,
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        modernClient: modernClient,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+
+    await model.connectSelectedPrinter()
+
+    #expect(model.lastPrinterInfo?.serialNumber == "SN-TEST")
+    #expect(modernClient.requestCount == 1)
+    #expect(modernClient.lastHost == "192.168.1.44")
+    #expect(modernClient.lastSerialNumber == "SN-TEST")
+    #expect(modernClient.lastCheckCode == "123456")
+    #expect(model.selectedPrinter?.status == .printing)
+    #expect(model.connectionMessage == "Desk Printer status is Printing.")
+    #expect(model.isConnecting == false)
+}
+
+@MainActor
 @Test func connectSelectedPrinterExplainsUnreachablePrinter() async {
     let printer = PrinterSnapshot(
         name: "Desk Printer",

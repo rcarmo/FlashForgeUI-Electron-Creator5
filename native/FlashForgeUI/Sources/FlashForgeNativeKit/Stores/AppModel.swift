@@ -990,6 +990,14 @@ public final class AppModel {
             if let info = lastPrinterInfo {
                 connectionMessage = "\(info.displayName) reports \(info.typeName)."
             }
+            if let identifiedPrinter = selectedPrinter,
+               isStatusRefreshable(identifiedPrinter) {
+                _ = await refreshStatus(
+                    for: identifiedPrinter,
+                    announcesProgress: true,
+                    reportsBackgroundFailure: false
+                )
+            }
         } else {
             connectionMessage = selectedPrinterIdentificationFailureMessage(for: printer)
         }
