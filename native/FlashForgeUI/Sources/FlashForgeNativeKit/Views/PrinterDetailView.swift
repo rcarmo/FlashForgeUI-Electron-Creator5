@@ -3,7 +3,6 @@ import UniformTypeIdentifiers
 
 public struct PrinterDetailView: View {
     @Environment(\.openURL) private var openURL
-    @AppStorage("showAdvancedTelemetry") private var showAdvancedTelemetry = false
     @AppStorage("statusRefreshIntervalSeconds") private var statusRefreshIntervalSeconds = 15
     @State private var showsCancelConfirmation = false
     @State private var showsUploadImporter = false
@@ -502,14 +501,14 @@ public struct PrinterDetailView: View {
                 }
             }
 
-            if showAdvancedTelemetry {
+            if !printerDetailItems.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Advanced")
+                    Text("Printer Details")
                         .font(.headline)
                         .foregroundStyle(.secondary)
 
                     LazyVGrid(columns: telemetryColumns, alignment: .leading, spacing: 12) {
-                        ForEach(advancedTelemetryItems) { item in
+                        ForEach(printerDetailItems) { item in
                             TelemetryTile(title: item.title, value: item.value)
                         }
                     }
@@ -543,7 +542,7 @@ public struct PrinterDetailView: View {
         return items
     }
 
-    private var advancedTelemetryItems: [TelemetryItem] {
+    private var printerDetailItems: [TelemetryItem] {
         var items: [TelemetryItem] = []
 
         if let info = model.lastPrinterInfo {
@@ -560,10 +559,6 @@ public struct PrinterDetailView: View {
                 TelemetryItem(title: "Runtime", value: NativeFormatters.duration(status.printDuration)),
                 TelemetryItem(title: "Camera URL", value: status.cameraStreamURL.isEmpty ? "None" : "Reported")
             ])
-        }
-
-        if items.isEmpty {
-            items.append(TelemetryItem(title: "Advanced", value: "Connect and refresh status first."))
         }
 
         return items

@@ -2,7 +2,6 @@ import SwiftUI
 
 public struct SettingsView: View {
     @AppStorage("discoverOnLaunch") private var discoverOnLaunch = true
-    @AppStorage("showAdvancedTelemetry") private var showAdvancedTelemetry = false
     @AppStorage("statusRefreshIntervalSeconds") private var statusRefreshIntervalSeconds = 15
     @State private var showsForgetPrinterConfirmation = false
     @Bindable private var model: AppModel
@@ -50,7 +49,6 @@ public struct SettingsView: View {
                     Text("Every 30 seconds").tag(30)
                     Text("Every minute").tag(60)
                 }
-                Toggle("Show advanced telemetry", isOn: $showAdvancedTelemetry)
             }
         }
         .formStyle(.grouped)
