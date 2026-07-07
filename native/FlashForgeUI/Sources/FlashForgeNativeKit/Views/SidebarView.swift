@@ -58,12 +58,19 @@ public struct SidebarView: View {
             }
 
             ToolbarItem {
+                #if os(macOS)
+                SettingsLink {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                .help("Settings")
+                #else
                 Button {
                     onShowSettings()
                 } label: {
                     Label("Settings", systemImage: "gearshape")
                 }
                 .help("Settings")
+                #endif
             }
         }
     }
