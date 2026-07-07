@@ -10,10 +10,16 @@ public struct PrinterDetailView: View {
     @State private var isUploadDropTargeted = false
     @Bindable private var model: AppModel
     private let printer: PrinterSnapshot
+    private let onShowSettings: () -> Void
 
-    public init(model: AppModel, printer: PrinterSnapshot) {
+    public init(
+        model: AppModel,
+        printer: PrinterSnapshot,
+        onShowSettings: @escaping () -> Void = {}
+    ) {
         self.model = model
         self.printer = printer
+        self.onShowSettings = onShowSettings
     }
 
     public var body: some View {
@@ -27,6 +33,8 @@ public struct PrinterDetailView: View {
                 controlsSection
                 CameraPreviewView(config: model.selectedCameraStreamConfig) { _ in
                     model.acknowledgeCameraOpen()
+                } onRecover: { recoveryAction in
+                    handleCameraRecovery(recoveryAction)
                 }
                 telemetrySection
             }
@@ -561,6 +569,15 @@ public struct PrinterDetailView: View {
             }
 
             await model.refreshSelectedPrinterStatusInBackground()
+        }
+    }
+
+    private func handleCameraRecovery(_ recoveryAction: CameraRecoveryAction) {
+        switch recoveryAction {
+        case .refreshStatus:
+            Task { await model.refreshSelectedPrinterStatus() }
+        case .openSettings:
+            onShowSettings()
         }
     }
 }

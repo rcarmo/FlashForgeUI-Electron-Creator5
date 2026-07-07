@@ -12,6 +12,11 @@ public enum CameraSourceType: String, Codable, Sendable {
     case none
 }
 
+public enum CameraRecoveryAction: String, Codable, Sendable {
+    case refreshStatus
+    case openSettings
+}
+
 public struct CameraUserConfig: Codable, Equatable, Sendable {
     public var customCameraEnabled: Bool
     public var customCameraURL: String?
@@ -39,6 +44,7 @@ public struct CameraStreamConfig: Equatable, Sendable {
     public var isAvailable: Bool
     public var unavailableReason: String?
     public var recoverySuggestion: String?
+    public var recoveryAction: CameraRecoveryAction?
 
     public init(
         sourceType: CameraSourceType,
@@ -46,7 +52,8 @@ public struct CameraStreamConfig: Equatable, Sendable {
         streamURL: URL? = nil,
         isAvailable: Bool,
         unavailableReason: String? = nil,
-        recoverySuggestion: String? = nil
+        recoverySuggestion: String? = nil,
+        recoveryAction: CameraRecoveryAction? = nil
     ) {
         self.sourceType = sourceType
         self.streamType = streamType
@@ -54,6 +61,7 @@ public struct CameraStreamConfig: Equatable, Sendable {
         self.isAvailable = isAvailable
         self.unavailableReason = unavailableReason
         self.recoverySuggestion = recoverySuggestion
+        self.recoveryAction = recoveryAction
     }
 }
 
@@ -101,7 +109,8 @@ public enum CameraStreamResolver {
                     sourceType: .custom,
                     isAvailable: false,
                     unavailableReason: "Custom camera URL is invalid: \(error.description)",
-                    recoverySuggestion: "Update the custom camera URL in Settings."
+                    recoverySuggestion: "Update the custom camera URL in Settings.",
+                    recoveryAction: .openSettings
                 )
             }
         }
@@ -128,7 +137,8 @@ public enum CameraStreamResolver {
             sourceType: .none,
             isAvailable: false,
             unavailableReason: "No camera stream is available for this printer.",
-            recoverySuggestion: "Refresh status or set a custom camera URL in Settings."
+            recoverySuggestion: "Refresh status or set a custom camera URL in Settings.",
+            recoveryAction: .refreshStatus
         )
     }
 

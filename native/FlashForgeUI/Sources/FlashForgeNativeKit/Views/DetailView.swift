@@ -3,10 +3,16 @@ import SwiftUI
 public struct DetailView: View {
     @Bindable private var model: AppModel
     private let onAddPrinter: () -> Void
+    private let onShowSettings: () -> Void
 
-    public init(model: AppModel, onAddPrinter: @escaping () -> Void = {}) {
+    public init(
+        model: AppModel,
+        onAddPrinter: @escaping () -> Void = {},
+        onShowSettings: @escaping () -> Void = {}
+    ) {
         self.model = model
         self.onAddPrinter = onAddPrinter
+        self.onShowSettings = onShowSettings
     }
 
     public var body: some View {
@@ -16,7 +22,7 @@ public struct DetailView: View {
                 DashboardView(model: model, onAddPrinter: onAddPrinter)
             case .printer:
                 if let printer = model.selectedPrinter {
-                    PrinterDetailView(model: model, printer: printer)
+                    PrinterDetailView(model: model, printer: printer, onShowSettings: onShowSettings)
                 } else {
                     EmptyDetailView(message: "Select a printer.")
                 }

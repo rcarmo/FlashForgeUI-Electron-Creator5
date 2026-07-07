@@ -5,10 +5,16 @@ public struct CameraPreviewView: View {
 
     private let config: CameraStreamConfig
     private let onOpenStream: (URL) -> Void
+    private let onRecover: (CameraRecoveryAction) -> Void
 
-    public init(config: CameraStreamConfig, onOpenStream: @escaping (URL) -> Void = { _ in }) {
+    public init(
+        config: CameraStreamConfig,
+        onOpenStream: @escaping (URL) -> Void = { _ in },
+        onRecover: @escaping (CameraRecoveryAction) -> Void = { _ in }
+    ) {
         self.config = config
         self.onOpenStream = onOpenStream
+        self.onRecover = onRecover
     }
 
     public var body: some View {
@@ -75,6 +81,14 @@ public struct CameraPreviewView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
+            if let recoveryAction = config.recoveryAction {
+                Button {
+                    onRecover(recoveryAction)
+                } label: {
+                    Label(recoveryAction.label, systemImage: recoveryAction.systemImage)
+                }
+                .controlSize(.large)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.quaternary.opacity(0.35))
@@ -116,6 +130,26 @@ public struct CameraPreviewView: View {
             .padding(.vertical, 5)
             .background(.regularMaterial, in: Capsule())
             .padding(10)
+    }
+}
+
+private extension CameraRecoveryAction {
+    var label: String {
+        switch self {
+        case .refreshStatus:
+            "Refresh Status"
+        case .openSettings:
+            "Open Camera Settings"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .refreshStatus:
+            "arrow.clockwise"
+        case .openSettings:
+            "gearshape"
+        }
     }
 }
 

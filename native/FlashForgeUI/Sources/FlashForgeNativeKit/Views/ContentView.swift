@@ -21,6 +21,8 @@ public struct ContentView: View {
         } detail: {
             DetailView(model: model) {
                 showsAddPrinter = true
+            } onShowSettings: {
+                showsSettings = true
             }
         }
         .task {
