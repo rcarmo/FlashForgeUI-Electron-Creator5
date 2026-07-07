@@ -78,6 +78,19 @@ struct FlashForgeUIApp: App {
                 }
                 .disabled(!model.canOpenJobFile)
 
+                Menu("Recent Job Files") {
+                    if model.recentUploadFileURLs.isEmpty {
+                        Text("No Recent Job Files")
+                    } else {
+                        ForEach(model.recentUploadFileURLs, id: \.self) { fileURL in
+                            Button(NativeFormatters.jobFileMenuTitle(fileURL)) {
+                                _ = model.openJobFile(fileURL)
+                            }
+                        }
+                    }
+                }
+                .disabled(model.recentUploadFileURLs.isEmpty)
+
                 Button("Clear Job File") {
                     model.clearSelectedUploadFile()
                 }
