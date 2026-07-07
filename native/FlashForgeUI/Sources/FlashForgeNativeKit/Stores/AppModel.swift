@@ -5,6 +5,8 @@ import Observation
 @Observable
 public final class AppModel {
     nonisolated public static let supportedUploadFileExtensions = ["gcode", "gx", "3mf"]
+    nonisolated public static let manualPrinterCheckCodeHelpMessage =
+        "Needed later for refresh, upload, and job controls. You can add it now or save it later."
 
     public var printers: [PrinterSnapshot]
     public var selection: AppSelection? {
@@ -637,7 +639,7 @@ public final class AppModel {
             checkCodesByPrinterID[printer.id] = trimmedCheckCode
         }
         selection = .printer(printer.id)
-        connectionMessage = "Added \(displayName)."
+        connectionMessage = "Added \(displayName). Connect to identify it."
         return true
     }
 

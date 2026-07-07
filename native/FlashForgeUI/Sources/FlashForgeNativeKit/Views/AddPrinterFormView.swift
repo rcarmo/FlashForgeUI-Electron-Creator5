@@ -38,8 +38,14 @@ public struct AddPrinterFormView: View {
                 }
             }
 
-            SecureField("Check code", text: $checkCode)
-                .textFieldStyle(.roundedBorder)
+            VStack(alignment: .leading, spacing: 4) {
+                SecureField("Check code", text: $checkCode)
+                    .textFieldStyle(.roundedBorder)
+
+                Text(AppModel.manualPrinterCheckCodeHelpMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             HStack {
                 Button("Add Printer") {

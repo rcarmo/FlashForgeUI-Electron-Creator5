@@ -336,6 +336,8 @@ import Testing
     #expect(model.selectedPrinter?.eventPort == 8898)
     #expect(model.selectedPrinter?.protocolFormat == .modern)
     #expect(model.selectedPrinter?.status == .offline)
+    #expect(model.connectionMessage == "Added Workshop. Connect to identify it.")
+    #expect(AppModel.manualPrinterCheckCodeHelpMessage == "Needed later for refresh, upload, and job controls. You can add it now or save it later.")
     #expect(model.checkCode == "123456")
     #expect(store.document.profiles.count == 1)
     #expect(store.document.profiles.first?.checkCode == "123456")
