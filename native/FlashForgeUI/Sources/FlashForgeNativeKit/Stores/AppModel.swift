@@ -235,6 +235,18 @@ public final class AppModel {
         printers.filter { !($0.serialNumber ?? "").isEmpty }.count
     }
 
+    public var selectedPrinterIdentitySummary: String? {
+        guard let printer = selectedPrinter else {
+            return nil
+        }
+
+        guard let serialNumber = printer.serialNumber, !serialNumber.isEmpty else {
+            return "Connect to identify serial number."
+        }
+
+        return "Serial \(serialNumber)"
+    }
+
     public var availableJobCommands: Set<PrinterJobCommand> {
         guard let printer = selectedPrinter else {
             return []

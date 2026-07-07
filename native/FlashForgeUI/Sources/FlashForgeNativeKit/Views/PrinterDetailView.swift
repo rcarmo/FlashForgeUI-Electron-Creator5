@@ -114,6 +114,11 @@ public struct PrinterDetailView: View {
             Text(printer.status.rawValue)
                 .font(.headline)
                 .foregroundStyle(printer.status.isActionable ? .orange : .primary)
+            if let identitySummary = model.selectedPrinterIdentitySummary {
+                Label(identitySummary, systemImage: printer.serialNumber?.isEmpty == false ? "number" : "info.circle")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
             if let connectReadinessMessage = model.selectedPrinterConnectReadinessMessage {
                 Label(connectReadinessMessage, systemImage: "info.circle")
                     .font(.callout)

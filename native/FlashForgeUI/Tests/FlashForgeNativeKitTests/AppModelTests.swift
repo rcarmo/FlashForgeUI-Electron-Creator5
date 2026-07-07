@@ -534,10 +534,12 @@ import Testing
 
     #expect(model.selectedPrinterConnectReadinessMessage == nil)
     #expect(model.canConnectSelectedPrinter == true)
+    #expect(model.selectedPrinterIdentitySummary == "Connect to identify serial number.")
 
     await model.connectSelectedPrinter()
 
     #expect(model.lastPrinterInfo?.typeName == "FlashForge Adventurer 5M Pro")
+    #expect(model.selectedPrinterIdentitySummary == "Serial SN-TEST")
     #expect(model.connectionMessage == "Desk Printer reports FlashForge Adventurer 5M Pro.")
     #expect(model.isConnecting == false)
 }
