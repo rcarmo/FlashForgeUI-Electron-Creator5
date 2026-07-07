@@ -37,4 +37,20 @@ public enum NativeFormatters {
         }
         return date.formatted(.relative(presentation: .named))
     }
+
+    public static func jobFileMenuTitle(_ fileURL: URL) -> String {
+        let fileName = fileURL.lastPathComponent
+        let parentName = fileURL.deletingLastPathComponent().lastPathComponent
+
+        guard !parentName.isEmpty else {
+            return fileName
+        }
+
+        return "\(fileName) - \(parentName)"
+    }
+
+    public static func jobFileLocation(_ fileURL: URL) -> String? {
+        let parentPath = fileURL.deletingLastPathComponent().path
+        return parentPath.isEmpty ? nil : parentPath
+    }
 }

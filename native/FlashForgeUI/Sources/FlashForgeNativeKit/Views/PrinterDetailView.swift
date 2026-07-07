@@ -289,10 +289,7 @@ public struct PrinterDetailView: View {
 
             recentFilesMenu
 
-            Text(model.selectedUploadFileName)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .frame(maxWidth: 240, alignment: .leading)
+            selectedUploadFileSummary
 
             Button {
                 model.clearSelectedUploadFile()
@@ -322,7 +319,7 @@ public struct PrinterDetailView: View {
                 Text("No Recent Files")
             } else {
                 ForEach(model.recentUploadFileURLs, id: \.self) { fileURL in
-                    Button(fileURL.lastPathComponent) {
+                    Button(NativeFormatters.jobFileMenuTitle(fileURL)) {
                         _ = model.openJobFile(fileURL)
                     }
                 }
@@ -338,6 +335,24 @@ public struct PrinterDetailView: View {
         }
         .controlSize(.large)
         .disabled(model.recentUploadFileURLs.isEmpty)
+    }
+
+    private var selectedUploadFileSummary: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(model.selectedUploadFileName)
+                .lineLimit(1)
+
+            if let fileURL = model.selectedUploadFileURL,
+               let location = NativeFormatters.jobFileLocation(fileURL) {
+                Text(location)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+        }
+        .foregroundStyle(model.selectedUploadFileURL == nil ? .secondary : .primary)
+        .frame(maxWidth: 260, alignment: .leading)
     }
 
     private var uploadDropZone: some View {
