@@ -1,0 +1,475 @@
+import SwiftUI
+import UniformTypeIdentifiers
+
+public struct PrinterDetailView: View {
+    @Environment(\.openURL) private var openURL
+    @AppStorage("showAdvancedTelemetry") private var showAdvancedTelemetry = false
+    @AppStorage("statusRefreshIntervalSeconds") private var statusRefreshIntervalSeconds = 15
+    @State private var showsCancelConfirmation = false
+    @State private var showsUploadImporter = false
+    @Bindable private var model: AppModel
+    private let printer: PrinterSnapshot
+
+    public init(model: AppModel, printer: PrinterSnapshot) {
+        self.model = model
+        self.printer = printer
+    }
+
+    public var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                header
+                jobSection
+                if let materialStation = printer.materialStation {
+                    MaterialStationView(station: materialStation)
+                }
+                controlsSection
+                CameraPreviewView(config: model.selectedCameraStreamConfig) { _ in
+                    model.acknowledgeCameraOpen()
+                }
+                telemetrySection
+            }
+            .padding(28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .confirmationDialog(
+            "Cancel the current print?",
+            isPresented: $showsCancelConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Cancel Print", role: .destructive) {
+                Task { await model.sendSelectedPrinterJobCommand(.cancel) }
+            }
+            Button("Keep Printing", role: .cancel) {}
+        }
+        .fileImporter(
+            isPresented: $showsUploadImporter,
+            allowedContentTypes: supportedUploadTypes,
+            allowsMultipleSelection: false
+        ) { result in
+            if case .success(let urls) = result, let fileURL = urls.first {
+                model.selectUploadFile(fileURL)
+            }
+        }
+        .task(id: autoRefreshTaskKey) {
+            await runAutoRefreshLoop()
+        }
+        .navigationTitle(printer.name)
+        .toolbar {
+            ToolbarItemGroup {
+                Button {
+                    Task { await model.connectSelectedPrinter() }
+                } label: {
+                    Label("Connect", systemImage: "link")
+                }
+                .disabled(!model.canConnectSelectedPrinter)
+
+                Button {
+                    Task { await model.refreshSelectedPrinterStatus() }
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+                .disabled(!model.canRefreshSelectedPrinterStatus)
+
+                if let streamURL = model.selectedCameraStreamURL {
+                    Button {
+                        openURL(streamURL)
+                        model.acknowledgeCameraOpen()
+                    } label: {
+                        Label("Open Camera", systemImage: "video")
+                    }
+                }
+
+                Button {
+                    showsUploadImporter = true
+                } label: {
+                    Label("Choose File", systemImage: "doc.badge.plus")
+                }
+            }
+        }
+    }
+
+    private var header: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 16) {
+                headerText
+                Spacer()
+                connectButton
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                headerText
+                connectButton
+            }
+        }
+    }
+
+    private var headerText: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(printer.name)
+                .font(.largeTitle.weight(.semibold))
+            Text("\(printer.model) - \(printer.address)")
+                .foregroundStyle(.secondary)
+            Text(printer.status.rawValue)
+                .font(.headline)
+                .foregroundStyle(printer.status.isActionable ? .orange : .primary)
+            if let connectReadinessMessage = model.selectedPrinterConnectReadinessMessage {
+                Label(connectReadinessMessage, systemImage: "info.circle")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var connectButton: some View {
+        Button {
+            Task { await model.connectSelectedPrinter() }
+        } label: {
+            Label(model.isConnecting ? "Connecting" : "Connect", systemImage: "link")
+        }
+        .controlSize(.large)
+        .disabled(!model.canConnectSelectedPrinter)
+    }
+
+    @ViewBuilder
+    private var jobSection: some View {
+        if let job = printer.activeJob {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Current Job")
+                    .font(.title2.weight(.semibold))
+                Text(job.fileName)
+                    .font(.headline)
+                ProgressView(value: job.progress)
+                jobProgressText(job)
+                jobCommandButtons
+                if let jobCommandReadinessMessage {
+                    Label(jobCommandReadinessMessage, systemImage: "info.circle")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(16)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("No Active Print")
+                    .font(.title2.weight(.semibold))
+                Text(printer.status.rawValue)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    private func jobProgressText(_ job: PrintJobSnapshot) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                Text(NativeFormatters.percent(job.progress))
+                Text("remaining \(NativeFormatters.duration(job.timeRemaining))")
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(NativeFormatters.percent(job.progress))
+                Text("remaining \(NativeFormatters.duration(job.timeRemaining))")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var jobCommandButtons: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                pauseButton
+                resumeButton
+                cancelButton
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                pauseButton
+                resumeButton
+                cancelButton
+            }
+        }
+        .controlSize(.large)
+    }
+
+    private var pauseButton: some View {
+        Button {
+            Task { await model.sendSelectedPrinterJobCommand(.pause) }
+        } label: {
+            Label(commandLabel(for: .pause, fallback: "Pause"), systemImage: "pause.fill")
+        }
+        .disabled(!canSend(.pause))
+    }
+
+    private var resumeButton: some View {
+        Button {
+            Task { await model.sendSelectedPrinterJobCommand(.resume) }
+        } label: {
+            Label(commandLabel(for: .resume, fallback: "Resume"), systemImage: "play.fill")
+        }
+        .disabled(!canSend(.resume))
+    }
+
+    private var cancelButton: some View {
+        Button(role: .destructive) {
+            showsCancelConfirmation = true
+        } label: {
+            Label(commandLabel(for: .cancel, fallback: "Cancel"), systemImage: "xmark.circle")
+        }
+        .disabled(!canSend(.cancel))
+    }
+
+    private var controlsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Common Actions")
+                .font(.title2.weight(.semibold))
+
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    checkCodeField
+                    refreshButton
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    checkCodeField
+                    refreshButton
+                }
+            }
+
+            if statusRefreshIntervalSeconds > 0 {
+                Label("Auto-refresh every \(statusRefreshIntervalSeconds) seconds", systemImage: "clock.arrow.circlepath")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let refreshReadinessMessage = model.selectedPrinterStatusRefreshReadinessMessage {
+                Label(refreshReadinessMessage, systemImage: "info.circle")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    uploadControls
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    uploadControls
+                }
+            }
+
+            if let uploadReadinessMessage = model.selectedUploadReadinessMessage {
+                Label(uploadReadinessMessage, systemImage: "info.circle")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var checkCodeField: some View {
+        TextField("Check code", text: $model.checkCode)
+            .textFieldStyle(.roundedBorder)
+            .frame(maxWidth: 220)
+    }
+
+    private var refreshButton: some View {
+        Button {
+            Task { await model.refreshSelectedPrinterStatus() }
+        } label: {
+            Label(model.isRefreshingStatus ? "Refreshing" : "Refresh Status", systemImage: "arrow.clockwise")
+        }
+        .controlSize(.large)
+        .disabled(!model.canRefreshSelectedPrinterStatus)
+    }
+
+    private var uploadControls: some View {
+        Group {
+            Button {
+                showsUploadImporter = true
+            } label: {
+                Label("Choose File", systemImage: "doc.badge.plus")
+            }
+            .controlSize(.large)
+
+            Text(model.selectedUploadFileName)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .frame(maxWidth: 240, alignment: .leading)
+
+            Toggle("Start", isOn: $model.startPrintAfterUpload)
+
+            Toggle("Level", isOn: $model.levelingBeforePrint)
+
+            Button {
+                Task { await model.uploadSelectedJob() }
+            } label: {
+                Label(model.isUploadingJob ? "Uploading" : "Upload", systemImage: "square.and.arrow.up")
+            }
+            .controlSize(.large)
+            .disabled(!model.canUploadSelectedJob)
+        }
+    }
+
+    private var telemetrySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Telemetry")
+                .font(.title2.weight(.semibold))
+
+            LazyVGrid(columns: telemetryColumns, alignment: .leading, spacing: 12) {
+                ForEach(coreTelemetryItems) { item in
+                    TelemetryTile(title: item.title, value: item.value)
+                }
+            }
+
+            if showAdvancedTelemetry {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Advanced")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+
+                    LazyVGrid(columns: telemetryColumns, alignment: .leading, spacing: 12) {
+                        ForEach(advancedTelemetryItems) { item in
+                            TelemetryTile(title: item.title, value: item.value)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var telemetryColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 160), spacing: 12)]
+    }
+
+    private var coreTelemetryItems: [TelemetryItem] {
+        var items = [
+            TelemetryItem(title: "Nozzle", value: NativeFormatters.temperature(printer.nozzleTemperature)),
+            TelemetryItem(title: "Bed", value: NativeFormatters.temperature(printer.bedTemperature)),
+            TelemetryItem(title: "Camera", value: printer.cameraState.rawValue)
+        ]
+
+        if let material = printer.material {
+            items.append(contentsOf: [
+                TelemetryItem(title: "Material", value: material.name),
+                TelemetryItem(
+                    title: "Remaining",
+                    value: material.remainingGrams.map { "\(Int($0.rounded())) g" } ?? "Unknown"
+                ),
+                TelemetryItem(title: "Color", value: material.colorHex)
+            ])
+        }
+
+        return items
+    }
+
+    private var advancedTelemetryItems: [TelemetryItem] {
+        var items: [TelemetryItem] = []
+
+        if let info = model.lastPrinterInfo {
+            items.append(contentsOf: [
+                TelemetryItem(title: "Firmware", value: info.firmwareVersion),
+                TelemetryItem(title: "Serial", value: info.serialNumber.isEmpty ? "Unknown" : info.serialNumber),
+                TelemetryItem(title: "Volume", value: info.dimensions.isEmpty ? "Unknown" : info.dimensions)
+            ])
+        }
+
+        if let status = model.lastModernStatus {
+            items.append(contentsOf: [
+                TelemetryItem(title: "HTTP Model", value: status.modelName),
+                TelemetryItem(title: "Runtime", value: NativeFormatters.duration(status.printDuration)),
+                TelemetryItem(title: "Camera URL", value: status.cameraStreamURL.isEmpty ? "None" : "Reported")
+            ])
+        }
+
+        if items.isEmpty {
+            items.append(TelemetryItem(title: "Advanced", value: "Connect and refresh status first."))
+        }
+
+        return items
+    }
+
+    private func canSend(_ command: PrinterJobCommand) -> Bool {
+        model.canSendSelectedPrinterJobCommand(command)
+    }
+
+    private func commandLabel(for command: PrinterJobCommand, fallback: String) -> String {
+        model.activeJobCommand == command ? "Sending" : fallback
+    }
+
+    private var jobCommandReadinessMessage: String? {
+        for command in [PrinterJobCommand.pause, .resume, .cancel] where model.availableJobCommands.contains(command) {
+            if let message = model.selectedPrinterJobCommandReadinessMessage(for: command) {
+                return message
+            }
+        }
+
+        return nil
+    }
+
+    private var supportedUploadTypes: [UTType] {
+        AppModel.supportedUploadFileExtensions.compactMap { UTType(filenameExtension: $0) }
+    }
+
+    private var autoRefreshTaskKey: AutoRefreshTaskKey {
+        AutoRefreshTaskKey(
+            printerID: printer.id,
+            intervalSeconds: statusRefreshIntervalSeconds,
+            hasSerialNumber: !(printer.serialNumber ?? "").isEmpty,
+            trimmedCheckCode: model.checkCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+
+    private func runAutoRefreshLoop() async {
+        guard statusRefreshIntervalSeconds > 0, model.canRefreshSelectedPrinterStatus else {
+            return
+        }
+
+        while !Task.isCancelled {
+            do {
+                try await Task.sleep(for: .seconds(statusRefreshIntervalSeconds))
+            } catch {
+                return
+            }
+
+            if Task.isCancelled {
+                return
+            }
+
+            await model.refreshSelectedPrinterStatusInBackground()
+        }
+    }
+}
+
+private struct AutoRefreshTaskKey: Equatable {
+    let printerID: UUID
+    let intervalSeconds: Int
+    let hasSerialNumber: Bool
+    let trimmedCheckCode: String
+}
+
+private struct TelemetryItem: Identifiable {
+    var id: String { title }
+    let title: String
+    let value: String
+}
+
+private struct TelemetryTile: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
