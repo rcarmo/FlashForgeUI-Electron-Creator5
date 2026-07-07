@@ -983,7 +983,7 @@ public final class AppModel {
             saveProfiles()
         }
 
-        connectionMessage = "Identified \(NativeFormatters.itemCount(identifiedCount, singular: "printer", plural: "printers"))."
+        connectionMessage = knownPrinterIdentificationSummary(identifiedCount: identifiedCount, targetCount: printers.count)
         return identifiedCount
     }
 
@@ -1433,6 +1433,18 @@ public final class AppModel {
         }
 
         return "Refreshed \(refreshedCount) of \(targetCount) printers. Check the remaining printers' codes and network."
+    }
+
+    private func knownPrinterIdentificationSummary(identifiedCount: Int, targetCount: Int) -> String {
+        if identifiedCount == targetCount {
+            return "Identified \(NativeFormatters.itemCount(identifiedCount, singular: "printer", plural: "printers"))."
+        }
+
+        if identifiedCount == 0 {
+            return "Could not identify any printers. Check that they are powered on and reachable on the local network."
+        }
+
+        return "Identified \(identifiedCount) of \(targetCount) printers. Check the remaining printers' addresses and local network."
     }
 
     private func statusRefreshFailureMessage(for printer: PrinterSnapshot, isBackground: Bool) -> String {

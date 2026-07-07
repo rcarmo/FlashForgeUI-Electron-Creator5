@@ -686,7 +686,51 @@ import Testing
     #expect(model.identifiedPrinterCount == 1)
     #expect(model.printers.first { $0.id == firstID }?.serialNumber == "SN-FIRST")
     #expect(model.printers.first { $0.id == secondID }?.serialNumber == nil)
-    #expect(model.connectionMessage == "Identified 1 printer.")
+    #expect(model.connectionMessage == "Identified 1 of 2 printers. Check the remaining printers' addresses and local network.")
+}
+
+@MainActor
+@Test func connectKnownPrintersExplainsWhenNoPrintersIdentify() async {
+    let firstID = UUID()
+    let secondID = UUID()
+    let bootstrapClient = RecordingBootstrapClient(
+        infosByHost: [:],
+        failingHosts: ["192.168.1.44", "192.168.1.45"]
+    )
+    let store = RecordingProfileStore(
+        document: PrinterProfileDocument(
+            profiles: [
+                PrinterProfile(
+                    id: firstID,
+                    name: "Studio",
+                    model: "Unknown",
+                    address: "192.168.1.44",
+                    commandPort: 8899
+                ),
+                PrinterProfile(
+                    id: secondID,
+                    name: "Workshop",
+                    model: "Unknown",
+                    address: "192.168.1.45",
+                    commandPort: 8899
+                )
+            ],
+            selectedPrinterID: firstID
+        )
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: bootstrapClient,
+        profileStore: store
+    )
+
+    let identifiedCount = await model.connectKnownPrinters()
+
+    #expect(identifiedCount == 0)
+    #expect(bootstrapClient.requestedHosts == ["192.168.1.44", "192.168.1.45"])
+    #expect(model.identifiedPrinterCount == 0)
+    #expect(model.connectionMessage == "Could not identify any printers. Check that they are powered on and reachable on the local network.")
+    #expect(model.isConnectingKnownPrinters == false)
 }
 
 @MainActor
