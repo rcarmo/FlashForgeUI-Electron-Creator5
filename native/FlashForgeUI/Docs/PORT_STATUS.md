@@ -40,7 +40,7 @@ allowed to go stale until the Mac beta goal is met.
 | Upload workflow | Implemented | Deferred; document picker/runtime upload needs future device validation |
 | Camera workflow | Partial | Deferred; inline rendering/runtime permissions need future device validation |
 | Packaging | Local `.app`, ad hoc signing, zip archive | No non-Mac packaging tracked for Mac beta |
-| Verification | Swift build/test, package verify, launch verify | Optional; run only when intentionally resuming mobile work |
+| Verification | Swift build/test, package verify, launch verify, and real-printer smoke checklist | Optional; run only when intentionally resuming mobile work |
 
 ## Functionality Matrix
 
@@ -64,6 +64,7 @@ allowed to go stale until the Mac beta goal is met.
 | Material station display | Partial | `MaterialStationView`, modern status decoding | Validate local AD5X status display with real printers |
 | Settings | Basic implemented | `SettingsView` | Split/expand settings as feature surface grows |
 | Mac menus and shortcuts | Implemented for core flows | `FlashForgeUIApp.swift` command menus | Audit shortcut conflicts as features grow |
+| Real-printer Mac smoke | Checklist implemented | `script/mac_beta_smoke.sh` records discovery, setup, status, upload/control, and camera checks | Run against actual local printers before beta |
 | Native UI automation | Not implemented | Native has unit tests and package launch verify only | Add UI tests for local Mac beta workflows |
 
 ## Current Verification Baseline
@@ -75,6 +76,7 @@ env CLANG_MODULE_CACHE_PATH=.build/module-cache swift build --disable-sandbox
 env CLANG_MODULE_CACHE_PATH=.build/module-cache swift test --disable-sandbox
 ./script/package_app.sh --verify
 ./script/build_and_run.sh --verify
+./script/mac_beta_smoke.sh --record
 ```
 
 Run `./script/verify_ios_kit.sh` only when intentionally working on the mobile
@@ -101,8 +103,8 @@ implemented and verified:
 
 ## Next High-Value Slices
 
-1. Add a real-printer Mac smoke checklist/script for discovery, setup, status,
-   upload, job control, and camera open.
+1. Run the real-printer Mac smoke checklist for discovery, setup, status,
+   upload, job control, and camera open, then capture follow-up failures.
 2. Harden modern printer status/control error handling around network loss,
    missing credentials, and rejected commands.
 3. Fill any remaining local camera gaps needed for dependable Mac beta use

@@ -80,6 +80,19 @@ SIGN_IDENTITY="Developer ID Application: Example Team (TEAMID)" ./script/package
 Developer ID signing and notarization are separate distribution steps; the
 current script prepares a validated local archive under `dist/archive/`.
 
+## Mac Beta Smoke
+
+After packaging, generate the real-printer smoke checklist used for the Mac
+beta gate:
+
+```bash
+./script/mac_beta_smoke.sh --record
+```
+
+Use `--print` to show the checklist without writing a report. The smoke pass is
+Mac-only and covers discovery, setup, status, upload/control, and camera flows
+with a local printer.
+
 ## Job Files
 
 The macOS bundle declares `.gcode`, `.gx`, and `.3mf` as job file inputs. Opening
