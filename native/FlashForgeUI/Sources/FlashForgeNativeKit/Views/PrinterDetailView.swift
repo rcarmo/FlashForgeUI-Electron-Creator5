@@ -84,7 +84,7 @@ public struct PrinterDetailView: View {
                 Button {
                     showsUploadImporter = true
                 } label: {
-                    Label("Choose File", systemImage: "doc.badge.plus")
+                    Label("Choose Job File", systemImage: "doc.badge.plus")
                 }
             }
         }
@@ -283,7 +283,7 @@ public struct PrinterDetailView: View {
             Button {
                 showsUploadImporter = true
             } label: {
-                Label("Choose File", systemImage: "doc.badge.plus")
+                Label("Choose Job File", systemImage: "doc.badge.plus")
             }
             .controlSize(.large)
 
@@ -294,19 +294,19 @@ public struct PrinterDetailView: View {
             Button {
                 model.clearSelectedUploadFile()
             } label: {
-                Label("Clear File", systemImage: "xmark.circle")
+                Label("Clear Job File", systemImage: "xmark.circle")
             }
             .controlSize(.large)
             .disabled(model.selectedUploadFileURL == nil)
 
-            Toggle("Start", isOn: $model.startPrintAfterUpload)
+            Toggle("Start after upload", isOn: $model.startPrintAfterUpload)
 
-            Toggle("Level", isOn: $model.levelingBeforePrint)
+            Toggle("Level before print", isOn: $model.levelingBeforePrint)
 
             Button {
                 Task { await model.uploadSelectedJob() }
             } label: {
-                Label(model.isUploadingJob ? "Uploading" : "Upload", systemImage: "square.and.arrow.up")
+                Label(model.isUploadingJob ? "Uploading" : "Upload Job", systemImage: "square.and.arrow.up")
             }
             .controlSize(.large)
             .disabled(!model.canUploadSelectedJob)
@@ -331,7 +331,7 @@ public struct PrinterDetailView: View {
                 }
             }
         } label: {
-            Label("Recent", systemImage: "clock")
+            Label("Recent Files", systemImage: "clock")
         }
         .controlSize(.large)
         .disabled(model.recentUploadFileURLs.isEmpty)
