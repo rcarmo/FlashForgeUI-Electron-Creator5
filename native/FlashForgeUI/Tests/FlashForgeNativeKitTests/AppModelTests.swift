@@ -1592,6 +1592,36 @@ import Testing
 }
 
 @MainActor
+@Test func httpJobCommandFailureShowsStatusAndPrinterReason() async {
+    let commandClient = FailingCommandClient(error: ModernPrinterCommandError.httpStatus(409, "Printer is not paused"))
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .paused,
+        nozzleTemperature: TemperatureReading(current: 221),
+        bedTemperature: TemperatureReading(current: 58),
+        activeJob: PrintJobSnapshot(fileName: "benchy.3mf", progress: 0.4)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        commandClient: commandClient,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+
+    await model.sendSelectedPrinterJobCommand(.resume)
+
+    #expect(model.connectionMessage == "Could not send resume. Printer returned HTTP 409: Printer is not paused.")
+    #expect(model.isSendingJobCommand == false)
+    #expect(model.activeJobCommand == nil)
+}
+
+@MainActor
 @Test func selectedJobCommandReadinessExplainsMissingCheckCode() async {
     let commandClient = RecordingCommandClient()
     let printer = PrinterSnapshot(

@@ -1527,6 +1527,15 @@ public final class AppModel {
         switch commandError {
         case .transportFailed:
             return "Could not send \(command.rawValue). Check that the printer is online and reachable on the network."
+        case .httpStatus(let statusCode, let message):
+            let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if trimmedMessage.isEmpty {
+                return "Could not send \(command.rawValue). Printer returned HTTP \(statusCode). Check printer status, check code, and network."
+            }
+
+            return "Could not send \(command.rawValue). Printer returned HTTP \(statusCode): \(trimmedMessage)."
+        case .invalidResponse:
+            return "Could not send \(command.rawValue). The printer returned an unexpected response."
         case .rejected(let message):
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedMessage.isEmpty {
