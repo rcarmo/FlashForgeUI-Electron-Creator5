@@ -132,6 +132,11 @@ public struct PrinterDetailView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            if let failureSummary = model.selectedPrinterStatusFailureSummary {
+                Label(failureSummary, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+            }
             if let connectReadinessMessage = model.selectedPrinterConnectReadinessMessage {
                 Label(connectReadinessMessage, systemImage: "info.circle")
                     .font(.callout)

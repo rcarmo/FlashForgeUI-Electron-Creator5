@@ -1011,8 +1011,45 @@ import Testing
 
     #expect(didRefresh == false)
     #expect(client.requestCount == 1)
+    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the check code and network.")
     #expect(model.connectionMessage == "Could not refresh Desk Printer at 192.168.1.44. Check the check code and network.")
     #expect(model.isRefreshingStatus == false)
+}
+
+@MainActor
+@Test func successfulStatusRefreshClearsPriorFailureSummary() async {
+    let client = FlakyModernClient(failuresBeforeSuccess: 1, status: .ready)
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "Unknown",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .printing,
+        nozzleTemperature: TemperatureReading(current: 221),
+        bedTemperature: TemperatureReading(current: 58),
+        activeJob: PrintJobSnapshot(fileName: "benchy.3mf", progress: 0.4)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        modernClient: client,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+
+    let failedRefresh = await model.refreshSelectedPrinterStatus()
+
+    #expect(failedRefresh == false)
+    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the check code and network.")
+
+    let successfulRefresh = await model.refreshSelectedPrinterStatus()
+
+    #expect(successfulRefresh == true)
+    #expect(client.requestCount == 2)
+    #expect(model.selectedPrinterStatusFailureSummary == nil)
+    #expect(model.selectedPrinter?.status == .ready)
 }
 
 @MainActor
@@ -2284,6 +2321,44 @@ private final class FailingModernClient: ModernPrinterHTTPClient, @unchecked Sen
     func fetchStatus(host: String, port: UInt16, serialNumber: String, checkCode: String) async throws -> ModernPrinterStatus {
         requestCount += 1
         throw error
+    }
+}
+
+private final class FlakyModernClient: ModernPrinterHTTPClient, @unchecked Sendable {
+    var requestCount = 0
+    let failuresBeforeSuccess: Int
+    let status: ModernPrinterState
+
+    init(failuresBeforeSuccess: Int, status: ModernPrinterState) {
+        self.failuresBeforeSuccess = failuresBeforeSuccess
+        self.status = status
+    }
+
+    func fetchStatus(host: String, port: UInt16, serialNumber: String, checkCode: String) async throws -> ModernPrinterStatus {
+        requestCount += 1
+
+        if requestCount <= failuresBeforeSuccess {
+            throw URLError(.cannotConnectToHost)
+        }
+
+        return ModernPrinterStatus(
+            displayName: "Desk Printer",
+            firmwareVersion: "3.2.0",
+            pid: 38,
+            isPro: false,
+            isAD5X: true,
+            state: status,
+            nozzleCurrent: 221,
+            nozzleTarget: 225,
+            bedCurrent: 58,
+            bedTarget: 60,
+            printFileName: status == .printing ? "benchy.3mf" : "",
+            printProgress: status == .printing ? 0.25 : 0,
+            estimatedTime: status == .printing ? 3600 : 0,
+            printDuration: status == .printing ? 1200 : 0,
+            filamentType: "PLA",
+            cameraStreamURL: "rtsp://192.168.1.44/live"
+        )
     }
 }
 

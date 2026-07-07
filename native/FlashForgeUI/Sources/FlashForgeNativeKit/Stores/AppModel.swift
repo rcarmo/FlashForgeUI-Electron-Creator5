@@ -124,6 +124,7 @@ public final class AppModel {
     private var printerInfoByPrinterID: [UUID: PrinterInfo]
     private var modernStatusesByPrinterID: [UUID: ModernPrinterStatus]
     private var statusUpdatedAtByPrinterID: [UUID: Date]
+    private var statusFailureMessagesByPrinterID: [UUID: String]
     private var uploadFileURLsByPrinterID: [UUID: URL]
     private var recentUploadFileURLsByPrinterID: [UUID: [URL]]
     private var pendingOpenedJobFileURL: URL?
@@ -166,6 +167,7 @@ public final class AppModel {
         self.printerInfoByPrinterID = [:]
         self.modernStatusesByPrinterID = [:]
         self.statusUpdatedAtByPrinterID = [:]
+        self.statusFailureMessagesByPrinterID = [:]
         self.uploadFileURLsByPrinterID = [:]
         self.recentUploadFileURLsByPrinterID = [:]
         self.pendingOpenedJobFileURL = nil
@@ -275,6 +277,14 @@ public final class AppModel {
         }
 
         return "Updated \(NativeFormatters.relativeUpdate(lastSelectedStatusUpdate))"
+    }
+
+    public var selectedPrinterStatusFailureSummary: String? {
+        guard let printer = selectedPrinter else {
+            return nil
+        }
+
+        return statusFailureMessagesByPrinterID[printer.id]
     }
 
     public var availableJobCommands: Set<PrinterJobCommand> {
@@ -801,6 +811,7 @@ public final class AppModel {
         printerInfoByPrinterID.removeValue(forKey: removedPrinterID)
         modernStatusesByPrinterID.removeValue(forKey: removedPrinterID)
         statusUpdatedAtByPrinterID.removeValue(forKey: removedPrinterID)
+        statusFailureMessagesByPrinterID.removeValue(forKey: removedPrinterID)
         uploadFileURLsByPrinterID.removeValue(forKey: removedPrinterID)
         recentUploadFileURLsByPrinterID.removeValue(forKey: removedPrinterID)
         saveProfiles()
@@ -1133,6 +1144,7 @@ public final class AppModel {
             merge(status: status, intoPrinterID: printer.id)
             let updatedAt = Date()
             statusUpdatedAtByPrinterID[printer.id] = updatedAt
+            statusFailureMessagesByPrinterID.removeValue(forKey: printer.id)
             lastUpdated = updatedAt
             saveProfiles()
             if announcesProgress || reportsBackgroundFailure {
@@ -1141,6 +1153,7 @@ public final class AppModel {
             return true
         } catch {
             modernStatusesByPrinterID.removeValue(forKey: printer.id)
+            statusFailureMessagesByPrinterID[printer.id] = "Last refresh failed. Check the check code and network."
             if announcesProgress || reportsBackgroundFailure {
                 connectionMessage = statusRefreshFailureMessage(for: printer, isBackground: !announcesProgress)
             }
