@@ -16,6 +16,7 @@ public final class AppModel {
         didSet {
             loadProfileSettingsForSelection()
             saveProfiles()
+            applyPendingOpenedJobFileIfNeeded()
         }
     }
     public var isDiscovering: Bool
@@ -124,6 +125,7 @@ public final class AppModel {
     private var modernStatusesByPrinterID: [UUID: ModernPrinterStatus]
     private var uploadFileURLsByPrinterID: [UUID: URL]
     private var recentUploadFileURLsByPrinterID: [UUID: [URL]]
+    private var pendingOpenedJobFileURL: URL?
     private var isApplyingProfileSettings: Bool
     private var hasStarted: Bool
 
@@ -164,6 +166,7 @@ public final class AppModel {
         self.modernStatusesByPrinterID = [:]
         self.uploadFileURLsByPrinterID = [:]
         self.recentUploadFileURLsByPrinterID = [:]
+        self.pendingOpenedJobFileURL = nil
         self.isApplyingProfileSettings = false
         self.hasStarted = false
         self.connectionMessage = printers.isEmpty ? "Discover printers on your local network." : nil
@@ -610,7 +613,7 @@ public final class AppModel {
     }
 
     public var canOpenJobFile: Bool {
-        selectedPrinter != nil || printers.count == 1
+        !printers.isEmpty
     }
 
     public func manualPrinterAddressPreview(for address: String) -> String? {
@@ -649,9 +652,7 @@ public final class AppModel {
             return
         }
 
-        selectedUploadFileURL = fileURL
-        rememberRecentUploadFile(fileURL)
-        connectionMessage = "\(fileURL.lastPathComponent) selected."
+        setSelectedUploadFile(fileURL)
     }
 
     @discardableResult
@@ -661,18 +662,22 @@ public final class AppModel {
             return false
         }
 
+        guard !printers.isEmpty else {
+            connectionMessage = "Select a printer first."
+            return false
+        }
+
         if selectedPrinter == nil, printers.count == 1, let printer = printers.first {
             selection = .printer(printer.id)
         }
 
         guard selectedPrinter != nil else {
-            connectionMessage = "Select a printer first."
+            pendingOpenedJobFileURL = fileURL
+            connectionMessage = "Select a printer to use \(fileURL.lastPathComponent)."
             return false
         }
 
-        selectedUploadFileURL = fileURL
-        rememberRecentUploadFile(fileURL)
-        connectionMessage = "\(fileURL.lastPathComponent) selected."
+        setSelectedUploadFile(fileURL)
         return true
     }
 
@@ -1359,6 +1364,21 @@ public final class AppModel {
         recentFiles.insert(fileURL, at: 0)
         recentUploadFileURLsByPrinterID[selectedPrinter.id] = Array(recentFiles.prefix(5))
         saveProfiles()
+    }
+
+    private func setSelectedUploadFile(_ fileURL: URL) {
+        selectedUploadFileURL = fileURL
+        rememberRecentUploadFile(fileURL)
+        connectionMessage = "\(fileURL.lastPathComponent) selected."
+    }
+
+    private func applyPendingOpenedJobFileIfNeeded() {
+        guard selectedPrinter != nil, let fileURL = pendingOpenedJobFileURL else {
+            return
+        }
+
+        pendingOpenedJobFileURL = nil
+        setSelectedUploadFile(fileURL)
     }
 
     private func sanitizedRecentUploadFileURLs(_ fileURLs: [URL]) -> [URL] {
