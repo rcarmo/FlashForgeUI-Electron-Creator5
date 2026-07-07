@@ -4,10 +4,11 @@ public protocol ModernPrinterHTTPClient {
     func fetchStatus(host: String, port: UInt16, serialNumber: String, checkCode: String) async throws -> ModernPrinterStatus
 }
 
-public enum ModernPrinterHTTPError: Error, Sendable {
+public enum ModernPrinterHTTPError: Error, Equatable, Sendable {
     case invalidURL
     case invalidResponse
-    case printerRejectedRequest
+    case httpStatus(Int, String?)
+    case printerRejectedRequest(String)
     case missingDetail
 }
 
@@ -38,18 +39,53 @@ public final class URLSessionModernPrinterHTTPClient: ModernPrinterHTTPClient {
         request.httpBody = try JSONEncoder().encode(DetailRequest(serialNumber: serialNumber, checkCode: checkCode))
 
         let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw ModernPrinterHTTPError.invalidResponse
         }
 
-        let detailResponse = try decoder.decode(DetailResponse.self, from: data)
+        guard httpResponse.statusCode == 200 else {
+            throw ModernPrinterHTTPError.httpStatus(
+                httpResponse.statusCode,
+                Self.failureMessage(from: data, decoder: decoder)
+            )
+        }
+
+        let detailResponse: DetailResponse
+        do {
+            detailResponse = try decoder.decode(DetailResponse.self, from: data)
+        } catch {
+            throw ModernPrinterHTTPError.invalidResponse
+        }
+
         guard detailResponse.code == 0, detailResponse.message == "Success" else {
-            throw ModernPrinterHTTPError.printerRejectedRequest
+            throw ModernPrinterHTTPError.printerRejectedRequest(detailResponse.message)
         }
         guard let detail = detailResponse.detail else {
             throw ModernPrinterHTTPError.missingDetail
         }
         return detail.status
+    }
+
+    private static func failureMessage(from data: Data, decoder: JSONDecoder) -> String? {
+        if let detailResponse = try? decoder.decode(DetailResponse.self, from: data) {
+            let trimmedMessage = detailResponse.message.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedMessage.isEmpty {
+                return trimmedMessage
+            }
+        }
+
+        let rawMessage = String(decoding: data, as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !rawMessage.isEmpty else {
+            return nil
+        }
+
+        if rawMessage.count > 160 {
+            return String(rawMessage.prefix(160)) + "..."
+        }
+
+        return rawMessage
     }
 }
 

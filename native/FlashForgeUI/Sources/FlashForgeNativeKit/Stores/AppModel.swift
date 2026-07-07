@@ -1161,9 +1161,13 @@ public final class AppModel {
             return true
         } catch {
             modernStatusesByPrinterID.removeValue(forKey: printer.id)
-            statusFailureMessagesByPrinterID[printer.id] = "Last refresh failed. Check the check code and network."
+            statusFailureMessagesByPrinterID[printer.id] = statusRefreshFailureSummary(for: error)
             if announcesProgress || reportsBackgroundFailure {
-                connectionMessage = statusRefreshFailureMessage(for: printer, isBackground: !announcesProgress)
+                connectionMessage = statusRefreshFailureMessage(
+                    for: printer,
+                    error: error,
+                    isBackground: !announcesProgress
+                )
             }
             return false
         }
@@ -1498,13 +1502,64 @@ public final class AppModel {
         return "Could not identify \(printer.name) at \(printer.address)\(port). Check that the printer is powered on and reachable on the local network."
     }
 
-    private func statusRefreshFailureMessage(for printer: PrinterSnapshot, isBackground: Bool) -> String {
-        let target = "\(printer.name) at \(printer.address)"
-        if isBackground {
-            return "Auto-refresh failed for \(target). Check the check code and network."
+    private func statusRefreshFailureSummary(for error: Error) -> String {
+        guard let httpError = error as? ModernPrinterHTTPError else {
+            return "Last refresh failed. Check the check code and network."
         }
 
-        return "Could not refresh \(target). Check the check code and network."
+        switch httpError {
+        case .invalidURL, .invalidResponse:
+            return "Last refresh failed. The printer returned an unexpected status response."
+        case .httpStatus(let statusCode, let message):
+            let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if trimmedMessage.isEmpty {
+                return "Last refresh failed with HTTP \(statusCode). Check the check code and network."
+            }
+
+            return "Last refresh failed with HTTP \(statusCode): \(trimmedMessage)."
+        case .printerRejectedRequest(let message):
+            let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedMessage.isEmpty {
+                return "Last refresh rejected. Check the check code and printer status."
+            }
+
+            return "Last refresh rejected: \(trimmedMessage)."
+        case .missingDetail:
+            return "Last refresh failed. The printer did not include status details."
+        }
+    }
+
+    private func statusRefreshFailureMessage(for printer: PrinterSnapshot, error: Error, isBackground: Bool) -> String {
+        let target = "\(printer.name) at \(printer.address)"
+        let action = isBackground ? "Auto-refresh failed for" : "Could not refresh"
+        guard let httpError = error as? ModernPrinterHTTPError else {
+            if isBackground {
+                return "Auto-refresh failed for \(target). Check the check code and network."
+            }
+
+            return "Could not refresh \(target). Check the check code and network."
+        }
+
+        switch httpError {
+        case .invalidURL, .invalidResponse:
+            return "\(action) \(target). The printer returned an unexpected status response."
+        case .httpStatus(let statusCode, let message):
+            let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if trimmedMessage.isEmpty {
+                return "\(action) \(target). Printer returned HTTP \(statusCode). Check the check code and network."
+            }
+
+            return "\(action) \(target). Printer returned HTTP \(statusCode): \(trimmedMessage)."
+        case .printerRejectedRequest(let message):
+            let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedMessage.isEmpty {
+                return "\(action) \(target). Printer rejected the refresh. Check the check code and printer status."
+            }
+
+            return "\(action) \(target). Printer rejected the refresh: \(trimmedMessage)."
+        case .missingDetail:
+            return "\(action) \(target). The printer did not include status details."
+        }
     }
 
     private func supportsLocalCameraFallback(printer: PrinterSnapshot, status: ModernPrinterStatus?) -> Bool {

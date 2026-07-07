@@ -1020,6 +1020,36 @@ import Testing
 }
 
 @MainActor
+@Test func httpStatusRefreshFailureShowsStatusAndPrinterReason() async {
+    let client = FailingModernClient(error: ModernPrinterHTTPError.httpStatus(403, "Check code is invalid"))
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "Unknown",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        modernClient: client,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+
+    let didRefresh = await model.refreshSelectedPrinterStatus()
+
+    #expect(didRefresh == false)
+    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed with HTTP 403: Check code is invalid.")
+    #expect(model.connectionMessage == "Could not refresh Desk Printer at 192.168.1.44. Printer returned HTTP 403: Check code is invalid.")
+    #expect(model.isRefreshingStatus == false)
+}
+
+@MainActor
 @Test func successfulStatusRefreshClearsPriorFailureSummary() async {
     let client = FlakyModernClient(failuresBeforeSuccess: 1, status: .ready)
     let printer = PrinterSnapshot(
