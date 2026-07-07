@@ -1224,9 +1224,16 @@ import Testing
 }
 
 @MainActor
-@Test func uploadSelectedJobSendsModernUploadRequestAndStartsPrint() async {
+@Test func uploadSelectedJobSendsModernUploadRequestAndStartsPrint() async throws {
     let uploadClient = RecordingUploadClient()
-    let fileURL = URL(fileURLWithPath: "/tmp/benchy.gcode")
+    let directoryURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FlashForgeNativeTests-\(UUID().uuidString)", isDirectory: true)
+    let fileURL = directoryURL.appendingPathComponent("benchy.gcode")
+    defer {
+        try? FileManager.default.removeItem(at: directoryURL)
+    }
+    try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+    try Data("G1 X1 Y1\n".utf8).write(to: fileURL)
     let printer = PrinterSnapshot(
         name: "Desk Printer",
         model: "AD5X",
@@ -1282,8 +1289,16 @@ import Testing
 }
 
 @MainActor
-@Test func rejectedUploadShowsPrinterReason() async {
+@Test func rejectedUploadShowsPrinterReason() async throws {
     let uploadClient = FailingUploadClient(error: ModernPrinterUploadError.rejected("Check code is invalid"))
+    let directoryURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FlashForgeNativeTests-\(UUID().uuidString)", isDirectory: true)
+    let fileURL = directoryURL.appendingPathComponent("benchy.gcode")
+    defer {
+        try? FileManager.default.removeItem(at: directoryURL)
+    }
+    try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+    try Data("G1 X1 Y1\n".utf8).write(to: fileURL)
     let printer = PrinterSnapshot(
         name: "Desk Printer",
         model: "AD5X",
@@ -1302,7 +1317,7 @@ import Testing
     )
     model.selection = .printer(printer.id)
     model.checkCode = "123456"
-    model.selectUploadFile(URL(fileURLWithPath: "/tmp/benchy.gcode"))
+    model.selectUploadFile(fileURL)
 
     await model.uploadSelectedJob()
 
@@ -1333,9 +1348,12 @@ import Testing
     model.checkCode = "123456"
     model.selectUploadFile(URL(fileURLWithPath: "/tmp/missing.gcode"))
 
+    #expect(model.selectedUploadReadinessMessage == "Choose the job file again.")
+    #expect(model.canUploadSelectedJob == false)
+
     await model.uploadSelectedJob()
 
-    #expect(model.connectionMessage == "Upload failed because the job file could not be found. Choose the file again.")
+    #expect(model.connectionMessage == "Choose the job file again.")
 }
 
 @MainActor

@@ -289,6 +289,10 @@ public final class AppModel {
             return "Enter the printer check code to upload a job."
         }
 
+        guard doesUploadFileExist(fileURL) else {
+            return "Choose the job file again."
+        }
+
         return nil
     }
 
@@ -636,6 +640,11 @@ public final class AppModel {
         let trimmedCheckCode = checkCode.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedCheckCode.isEmpty else {
             connectionMessage = "Enter the printer check code to upload a job."
+            return
+        }
+
+        guard doesUploadFileExist(fileURL) else {
+            connectionMessage = "Choose the job file again."
             return
         }
 
@@ -1111,6 +1120,17 @@ public final class AppModel {
 
     private func isSupportedUploadFile(_ fileURL: URL) -> Bool {
         Self.supportedUploadFileExtensions.contains(fileURL.pathExtension.lowercased())
+    }
+
+    private func doesUploadFileExist(_ fileURL: URL) -> Bool {
+        let didStartAccessing = fileURL.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing {
+                fileURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        return FileManager.default.fileExists(atPath: fileURL.path)
     }
 
     private func normalizedManualPrinterAddress(_ address: String) -> String? {
