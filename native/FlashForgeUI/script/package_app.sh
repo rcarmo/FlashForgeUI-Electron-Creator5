@@ -25,6 +25,10 @@ validate_bundle() {
   /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$INFO_PLIST" >/dev/null
   /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$INFO_PLIST" >/dev/null
   /usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "$INFO_PLIST" | grep -q "^AppIcon$"
+  /usr/libexec/PlistBuddy -c "Print :CFBundleDocumentTypes:0:LSItemContentTypes:0" "$INFO_PLIST" | grep -q "^com.ghosttypes.flashforgeui.gcode$"
+  /usr/libexec/PlistBuddy -c "Print :CFBundleDocumentTypes:0:LSItemContentTypes:1" "$INFO_PLIST" | grep -q "^com.ghosttypes.flashforgeui.gx$"
+  /usr/libexec/PlistBuddy -c "Print :CFBundleDocumentTypes:1:LSItemContentTypes:0" "$INFO_PLIST" | grep -q "^com.microsoft.3mf$"
+  /usr/libexec/PlistBuddy -c "Print :NSLocalNetworkUsageDescription" "$INFO_PLIST" | grep -q "FlashForge printers on your local network"
   test -s "$APP_ICON"
   /usr/bin/file "$APP_BINARY" | grep -q "Mach-O"
 }
