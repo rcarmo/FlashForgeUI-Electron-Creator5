@@ -358,6 +358,25 @@ import Testing
 }
 
 @MainActor
+@Test func manualPrinterProfileRejectsMalformedAddress() async {
+    let store = RecordingProfileStore()
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store
+    )
+
+    let didAddBrokenURL = model.addManualPrinter(name: "Workshop", address: "http://", checkCode: "123456")
+    let didAddSpacedHost = model.addManualPrinter(name: "Workshop", address: "printer local", checkCode: "123456")
+
+    #expect(didAddBrokenURL == false)
+    #expect(didAddSpacedHost == false)
+    #expect(model.printers.isEmpty)
+    #expect(store.document.profiles.isEmpty)
+    #expect(model.connectionMessage == "Enter a valid printer address or URL.")
+}
+
+@MainActor
 @Test func manualPrinterProfileNormalizesPastedAddressURL() async {
     let store = RecordingProfileStore()
     let model = AppModel(

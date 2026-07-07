@@ -524,8 +524,14 @@ public final class AppModel {
 
     @discardableResult
     public func addManualPrinter(name: String, address: String, checkCode: String = "") -> Bool {
-        guard let normalizedAddress = normalizedManualPrinterAddress(address) else {
+        let trimmedAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedAddress.isEmpty else {
             connectionMessage = "Enter the printer address."
+            return false
+        }
+
+        guard let normalizedAddress = normalizedManualPrinterAddress(address) else {
+            connectionMessage = "Enter a valid printer address or URL."
             return false
         }
 
@@ -1113,7 +1119,10 @@ public final class AppModel {
             return nil
         }
 
-        if let url = URL(string: trimmedAddress), let host = url.host(), !host.isEmpty {
+        if trimmedAddress.contains("://") {
+            guard let url = URL(string: trimmedAddress), let host = url.host(), isValidManualPrinterHost(host) else {
+                return nil
+            }
             return host
         }
 
@@ -1124,7 +1133,21 @@ public final class AppModel {
             .first
             .map(String.init) ?? withoutPath
         let normalizedAddress = withoutPort.trimmingCharacters(in: .whitespacesAndNewlines)
-        return normalizedAddress.isEmpty ? nil : normalizedAddress
+        return isValidManualPrinterHost(normalizedAddress) ? normalizedAddress : nil
+    }
+
+    private func isValidManualPrinterHost(_ host: String) -> Bool {
+        let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedHost.isEmpty,
+              trimmedHost.rangeOfCharacter(from: .whitespacesAndNewlines) == nil,
+              !trimmedHost.hasPrefix("."),
+              !trimmedHost.hasSuffix("."),
+              !trimmedHost.hasPrefix("-"),
+              !trimmedHost.hasSuffix("-") else {
+            return false
+        }
+
+        return true
     }
 
     private func rememberRecentUploadFile(_ fileURL: URL) {
