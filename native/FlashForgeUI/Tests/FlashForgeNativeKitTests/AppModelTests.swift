@@ -1442,6 +1442,44 @@ import Testing
 }
 
 @MainActor
+@Test func recentUploadFilesLoadFromProfilesAndPersistSelections() async {
+    let printerID = UUID()
+    let savedFileURL = URL(fileURLWithPath: "/tmp/saved.gcode")
+    let unsupportedFileURL = URL(fileURLWithPath: "/tmp/notes.txt")
+    let newFileURL = URL(fileURLWithPath: "/tmp/new-plate.3mf")
+    let store = RecordingProfileStore(
+        document: PrinterProfileDocument(
+            profiles: [
+                PrinterProfile(
+                    id: printerID,
+                    name: "Desk Printer",
+                    model: "AD5X",
+                    address: "192.168.1.44",
+                    serialNumber: "SN-TEST",
+                    eventPort: 8898,
+                    protocolFormat: .modern,
+                    checkCode: "123456",
+                    recentUploadFileURLs: [savedFileURL, unsupportedFileURL, savedFileURL]
+                )
+            ],
+            selectedPrinterID: printerID
+        )
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store
+    )
+
+    #expect(model.recentUploadFileURLs == [savedFileURL])
+
+    model.selectUploadFile(newFileURL)
+
+    #expect(model.recentUploadFileURLs == [newFileURL, savedFileURL])
+    #expect(store.document.profiles.first?.recentUploadFileURLs == [newFileURL, savedFileURL])
+}
+
+@MainActor
 @Test func openJobFileRequiresSelectedPrinter() async {
     let model = AppModel(service: EmptyPrinterService(), bootstrapClient: FakeBootstrapClient())
 

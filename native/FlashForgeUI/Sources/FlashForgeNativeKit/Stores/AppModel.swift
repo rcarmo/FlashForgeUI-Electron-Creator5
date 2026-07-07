@@ -933,6 +933,15 @@ public final class AppModel {
                     return (profile.id, config)
                 }
             )
+            recentUploadFileURLsByPrinterID = Dictionary(
+                uniqueKeysWithValues: document.profiles.compactMap { profile in
+                    let recentFiles = sanitizedRecentUploadFileURLs(profile.recentUploadFileURLs)
+                    guard !recentFiles.isEmpty else {
+                        return nil
+                    }
+                    return (profile.id, recentFiles)
+                }
+            )
             printers = document.profiles.map { $0.snapshot() }
 
             if let selectedPrinterID = document.selectedPrinterID,
@@ -971,7 +980,8 @@ public final class AppModel {
                 PrinterProfile(
                     snapshot: printer,
                     checkCode: checkCodesByPrinterID[printer.id],
-                    cameraUserConfig: cameraConfigsByPrinterID[printer.id]
+                    cameraUserConfig: cameraConfigsByPrinterID[printer.id],
+                    recentUploadFileURLs: recentUploadFileURLsByPrinterID[printer.id] ?? []
                 )
             }
 
@@ -1107,6 +1117,23 @@ public final class AppModel {
         recentFiles.removeAll { $0 == fileURL }
         recentFiles.insert(fileURL, at: 0)
         recentUploadFileURLsByPrinterID[selectedPrinter.id] = Array(recentFiles.prefix(5))
+        saveProfiles()
+    }
+
+    private func sanitizedRecentUploadFileURLs(_ fileURLs: [URL]) -> [URL] {
+        var seenFileURLs: Set<URL> = []
+        var sanitizedFileURLs: [URL] = []
+
+        for fileURL in fileURLs where isSupportedUploadFile(fileURL) && !seenFileURLs.contains(fileURL) {
+            sanitizedFileURLs.append(fileURL)
+            seenFileURLs.insert(fileURL)
+
+            if sanitizedFileURLs.count == 5 {
+                break
+            }
+        }
+
+        return sanitizedFileURLs
     }
 
     private func uploadFailureMessage(for error: Error) -> String {
