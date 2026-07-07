@@ -1477,6 +1477,12 @@ import Testing
 
     #expect(model.recentUploadFileURLs == [newFileURL, savedFileURL])
     #expect(store.document.profiles.first?.recentUploadFileURLs == [newFileURL, savedFileURL])
+
+    model.clearRecentUploadFiles()
+
+    #expect(model.recentUploadFileURLs.isEmpty)
+    #expect(store.document.profiles.first?.recentUploadFileURLs == [])
+    #expect(model.connectionMessage == "Recent job files cleared.")
 }
 
 @MainActor

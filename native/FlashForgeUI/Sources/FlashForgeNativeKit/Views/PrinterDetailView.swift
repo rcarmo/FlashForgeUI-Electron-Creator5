@@ -318,6 +318,12 @@ public struct PrinterDetailView: View {
                         _ = model.openJobFile(fileURL)
                     }
                 }
+
+                Divider()
+
+                Button("Clear Recent", role: .destructive) {
+                    model.clearRecentUploadFiles()
+                }
             }
         } label: {
             Label("Recent", systemImage: "clock")

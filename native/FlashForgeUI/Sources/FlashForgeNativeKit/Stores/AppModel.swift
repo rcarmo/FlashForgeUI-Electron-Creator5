@@ -494,6 +494,16 @@ public final class AppModel {
         return true
     }
 
+    public func clearRecentUploadFiles() {
+        guard let selectedPrinter else {
+            return
+        }
+
+        recentUploadFileURLsByPrinterID.removeValue(forKey: selectedPrinter.id)
+        saveProfiles()
+        connectionMessage = "Recent job files cleared."
+    }
+
     public func acknowledgeCameraOpen() {
         let config = selectedCameraStreamConfig
         if config.isAvailable, let streamURL = config.streamURL {
