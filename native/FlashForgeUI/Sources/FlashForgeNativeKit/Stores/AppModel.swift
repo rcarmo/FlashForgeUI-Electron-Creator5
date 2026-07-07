@@ -450,13 +450,17 @@ public final class AppModel {
 
     @discardableResult
     public func openJobFile(_ fileURL: URL) -> Bool {
-        guard selectedPrinter != nil else {
-            connectionMessage = "Select a printer first."
+        guard isSupportedUploadFile(fileURL) else {
+            connectionMessage = "Choose a .gcode, .gx, or .3mf file."
             return false
         }
 
-        guard isSupportedUploadFile(fileURL) else {
-            connectionMessage = "Choose a .gcode, .gx, or .3mf file."
+        if selectedPrinter == nil, printers.count == 1, let printer = printers.first {
+            selection = .printer(printer.id)
+        }
+
+        guard selectedPrinter != nil else {
+            connectionMessage = "Select a printer first."
             return false
         }
 

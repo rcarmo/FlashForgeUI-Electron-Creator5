@@ -1193,6 +1193,69 @@ import Testing
 }
 
 @MainActor
+@Test func openJobFileSelectsOnlyKnownPrinterWhenNoPrinterIsSelected() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+    let fileURL = URL(fileURLWithPath: "/tmp/benchy.gcode")
+
+    let didOpen = model.openJobFile(fileURL)
+
+    #expect(didOpen == true)
+    #expect(model.selection == .printer(printer.id))
+    #expect(model.selectedUploadFileURL == fileURL)
+    #expect(model.connectionMessage == "benchy.gcode selected.")
+}
+
+@MainActor
+@Test func openJobFileStillRequiresSelectionWhenSeveralPrintersAreKnown() async {
+    let firstPrinter = PrinterSnapshot(
+        name: "Studio Printer",
+        model: "AD5M",
+        address: "192.168.1.44",
+        serialNumber: "SN-ONE",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let secondPrinter = PrinterSnapshot(
+        name: "Workshop Printer",
+        model: "AD5X",
+        address: "192.168.1.45",
+        serialNumber: "SN-TWO",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 31),
+        bedTemperature: TemperatureReading(current: 29)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [firstPrinter, secondPrinter]
+    )
+
+    let didOpen = model.openJobFile(URL(fileURLWithPath: "/tmp/benchy.gcode"))
+
+    #expect(didOpen == false)
+    #expect(model.selection == .dashboard)
+    #expect(model.selectedUploadFileURL == nil)
+    #expect(model.connectionMessage == "Select a printer first.")
+}
+
+@MainActor
 @Test func openJobFileRejectsUnsupportedFile() async {
     let printer = PrinterSnapshot(
         name: "Desk Printer",
