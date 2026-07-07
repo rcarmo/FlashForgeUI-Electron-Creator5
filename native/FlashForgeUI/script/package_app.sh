@@ -6,6 +6,7 @@ APP_NAME="FlashForgeUI"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 ARCHIVE_DIR="$DIST_DIR/archive"
+INSTALL_DIR="${INSTALL_DIR:-/Applications}"
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 
 cd "$ROOT_DIR"
@@ -14,6 +15,7 @@ APP_BUNDLE="$("$ROOT_DIR/script/stage_app.sh" release)"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 INFO_PLIST="$APP_BUNDLE/Contents/Info.plist"
 ZIP_PATH="$ARCHIVE_DIR/$APP_NAME.zip"
+INSTALL_APP_BUNDLE="$INSTALL_DIR/$APP_NAME.app"
 
 validate_bundle() {
   test -d "$APP_BUNDLE"
@@ -46,6 +48,23 @@ create_zip() {
   test -s "$ZIP_PATH"
 }
 
+install_bundle() {
+  if [[ -e "$INSTALL_APP_BUNDLE" && "${INSTALL_REPLACE:-0}" != "1" ]]; then
+    echo "$INSTALL_APP_BUNDLE already exists; set INSTALL_REPLACE=1 to replace it" >&2
+    exit 3
+  fi
+
+  mkdir -p "$INSTALL_DIR"
+
+  if [[ -e "$INSTALL_APP_BUNDLE" ]]; then
+    rm -rf "$INSTALL_APP_BUNDLE"
+  fi
+
+  /usr/bin/ditto "$APP_BUNDLE" "$INSTALL_APP_BUNDLE"
+  test -d "$INSTALL_APP_BUNDLE"
+  test -x "$INSTALL_APP_BUNDLE/Contents/MacOS/$APP_NAME"
+}
+
 case "$MODE" in
   package)
     validate_bundle
@@ -58,9 +77,16 @@ case "$MODE" in
     sign_bundle
     echo "$APP_BUNDLE"
     ;;
+  install)
+    validate_bundle
+    sign_bundle
+    install_bundle
+    echo "$INSTALL_APP_BUNDLE"
+    ;;
   *)
-    echo "usage: $0 [package|--verify]" >&2
+    echo "usage: $0 [package|--verify|install]" >&2
     echo "set SIGN_IDENTITY=none to skip signing or SIGN_IDENTITY='Developer ID Application: ...' for distribution signing" >&2
+    echo "set INSTALL_DIR=/Applications and INSTALL_REPLACE=1 when replacing an installed app" >&2
     exit 2
     ;;
 esac

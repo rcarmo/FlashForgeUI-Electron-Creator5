@@ -48,6 +48,25 @@ Create a zipped release archive:
 ./script/package_app.sh
 ```
 
+Install a locally built app bundle:
+
+```bash
+./script/package_app.sh install
+```
+
+By default, install mode copies `FlashForgeUI.app` to `/Applications`. It will
+not replace an existing app unless you opt in:
+
+```bash
+INSTALL_REPLACE=1 ./script/package_app.sh install
+```
+
+For a dry local install target, override `INSTALL_DIR`:
+
+```bash
+INSTALL_DIR="$PWD/dist/local-install" ./script/package_app.sh install
+```
+
 The package script ad-hoc signs by default so the local bundle has a coherent
 signature for validation. Use `SIGN_IDENTITY=none ./script/package_app.sh` to
 skip signing, or pass a Developer ID identity when preparing a notarizable build:
