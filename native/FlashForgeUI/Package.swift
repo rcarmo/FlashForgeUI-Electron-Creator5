@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "FlashForgeNative",
+    name: "FlashForgeUI",
     platforms: [
         .macOS(.v14),
         .iOS(.v17)
@@ -14,8 +14,8 @@ let package = Package(
             targets: ["FlashForgeNativeKit"]
         ),
         .executable(
-            name: "FlashForgeNative",
-            targets: ["FlashForgeNative"]
+            name: "FlashForgeUI",
+            targets: ["FlashForgeUI"]
         ),
         .executable(
             name: "FlashForgeMobile",
@@ -27,7 +27,7 @@ let package = Package(
             name: "FlashForgeNativeKit"
         ),
         .executableTarget(
-            name: "FlashForgeNative",
+            name: "FlashForgeUI",
             dependencies: ["FlashForgeNativeKit"]
         ),
         .executableTarget(

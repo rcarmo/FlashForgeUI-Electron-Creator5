@@ -6,7 +6,7 @@ The project is intentionally split into:
 
 - `FlashForgeNativeKit`: shared SwiftUI views, models, stores, and services for
   macOS now and iPad/iOS later.
-- `FlashForgeNative`: macOS app lifecycle, commands, and foreground app launch.
+- `FlashForgeUI`: macOS app lifecycle, commands, and foreground app launch.
 - `FlashForgeMobile`: iPad/iOS-oriented SwiftUI app shell that reuses the
   shared kit without AppKit.
 

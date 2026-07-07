@@ -4,7 +4,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 @main
-struct FlashForgeNativeApp: App {
+struct FlashForgeUIApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var showsAddPrinter = false
     @State private var model = AppModel(

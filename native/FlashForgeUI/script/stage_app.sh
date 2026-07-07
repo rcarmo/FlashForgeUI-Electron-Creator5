@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CONFIGURATION="${1:-debug}"
-APP_NAME="FlashForgeNative"
+APP_NAME="FlashForgeUI"
 DISPLAY_NAME="FlashForgeUI"
 BUNDLE_ID="com.ghosttypes.flashforgeui.native"
 MIN_SYSTEM_VERSION="14.0"

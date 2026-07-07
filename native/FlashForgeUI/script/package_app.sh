@@ -2,7 +2,7 @@
 set -euo pipefail
 
 MODE="${1:-package}"
-APP_NAME="FlashForgeNative"
+APP_NAME="FlashForgeUI"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 ARCHIVE_DIR="$DIST_DIR/archive"
