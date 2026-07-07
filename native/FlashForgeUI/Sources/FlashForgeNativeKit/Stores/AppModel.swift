@@ -554,7 +554,7 @@ public final class AppModel {
         }
 
         let status = lastModernStatus
-        let fallbackURL = status?.isPro == true || status?.isAD5X == true
+        let fallbackURL = supportsLocalCameraFallback(printer: printer, status: status)
             ? CameraStreamResolver.flashForgeMJPEGURL(ipAddress: printer.address)
             : ""
 
@@ -1488,6 +1488,18 @@ public final class AppModel {
         }
 
         return "Could not refresh \(target). Check the check code and network."
+    }
+
+    private func supportsLocalCameraFallback(printer: PrinterSnapshot, status: ModernPrinterStatus?) -> Bool {
+        status?.isPro == true || status?.isAD5X == true || modelSupportsLocalCameraFallback(printer.model)
+    }
+
+    private func modelSupportsLocalCameraFallback(_ model: String) -> Bool {
+        let normalizedModel = model
+            .lowercased()
+            .filter { $0.isLetter || $0.isNumber }
+
+        return normalizedModel.contains("ad5x") || normalizedModel.contains("5mpro")
     }
 
     private func jobCommandFailureMessage(for command: PrinterJobCommand, error: Error) -> String {

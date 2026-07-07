@@ -1292,6 +1292,73 @@ import Testing
 }
 
 @MainActor
+@Test func selectedCameraStreamUsesKnownModelFallbackBeforeStatusRefresh() async {
+    let ad5xPrinter = PrinterSnapshot(
+        name: "Workshop",
+        model: "FlashForge AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-AD5X",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let proPrinter = PrinterSnapshot(
+        name: "Studio",
+        model: "FlashForge Adventurer 5M Pro",
+        address: "192.168.1.45",
+        serialNumber: "SN-PRO",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 31),
+        bedTemperature: TemperatureReading(current: 29)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [ad5xPrinter, proPrinter]
+    )
+
+    model.selection = .printer(ad5xPrinter.id)
+
+    #expect(model.lastModernStatus == nil)
+    #expect(model.selectedCameraStreamConfig.sourceType == .intelligentFallback)
+    #expect(model.selectedCameraStreamConfig.streamType == .mjpeg)
+    #expect(model.selectedCameraStreamURL?.absoluteString == "http://192.168.1.44:8080/?action=stream")
+
+    model.selection = .printer(proPrinter.id)
+
+    #expect(model.lastModernStatus == nil)
+    #expect(model.selectedCameraStreamConfig.sourceType == .intelligentFallback)
+    #expect(model.selectedCameraStreamConfig.streamType == .mjpeg)
+    #expect(model.selectedCameraStreamURL?.absoluteString == "http://192.168.1.45:8080/?action=stream")
+}
+
+@MainActor
+@Test func selectedCameraStreamDoesNotInventFallbackForStandard5MModel() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "FlashForge Adventurer 5M",
+        address: "192.168.1.46",
+        serialNumber: "SN-5M",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 29),
+        bedTemperature: TemperatureReading(current: 27)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+
+    #expect(model.lastModernStatus == nil)
+    #expect(model.selectedCameraStreamConfig.isAvailable == false)
+    #expect(model.selectedCameraStreamURL == nil)
+}
+
+@MainActor
 @Test func selectedCameraStreamDoesNotReuseAnotherPrintersCachedStatus() async {
     let firstPrinter = PrinterSnapshot(
         name: "Studio",
