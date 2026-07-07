@@ -635,6 +635,10 @@ public final class AppModel {
             : nil
     }
 
+    public func canSubmitManualPrinterAddress(_ address: String) -> Bool {
+        normalizedManualPrinterAddress(address) != nil
+    }
+
     public func start(discoverOnLaunch: Bool) async {
         guard !hasStarted else {
             return

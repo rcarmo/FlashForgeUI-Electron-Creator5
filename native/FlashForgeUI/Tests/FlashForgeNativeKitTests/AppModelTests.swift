@@ -372,6 +372,8 @@ import Testing
         profileStore: store
     )
 
+    #expect(model.canSubmitManualPrinterAddress("   ") == false)
+
     let didAdd = model.addManualPrinter(name: "Workshop", address: "   ", checkCode: "123456")
 
     #expect(didAdd == false)
@@ -388,6 +390,8 @@ import Testing
         bootstrapClient: FakeBootstrapClient(),
         profileStore: store
     )
+    #expect(model.canSubmitManualPrinterAddress("http://") == false)
+    #expect(model.canSubmitManualPrinterAddress("printer local") == false)
 
     let didAddBrokenURL = model.addManualPrinter(name: "Workshop", address: "http://", checkCode: "123456")
     let didAddSpacedHost = model.addManualPrinter(name: "Workshop", address: "printer local", checkCode: "123456")
@@ -410,6 +414,7 @@ import Testing
 
     #expect(model.manualPrinterAddressPreview(for: " http://192.168.1.77:8898/detail ") == "Will save as 192.168.1.77.")
     #expect(model.manualPrinterAddressValidationMessage(for: " http://192.168.1.77:8898/detail ") == nil)
+    #expect(model.canSubmitManualPrinterAddress(" http://192.168.1.77:8898/detail ") == true)
 
     model.addManualPrinter(
         name: "",
@@ -434,6 +439,7 @@ import Testing
 
     #expect(model.manualPrinterAddressPreview(for: "printer.local:8898") == "Will save as printer.local.")
     #expect(model.manualPrinterAddressValidationMessage(for: "http://") == "Enter a valid printer address or URL.")
+    #expect(model.canSubmitManualPrinterAddress("printer.local:8898") == true)
 
     model.addManualPrinter(name: "Old Name", address: "printer.local:8898", checkCode: "111111")
     model.addManualPrinter(name: "New Name", address: "http://printer.local:8899/", checkCode: "222222")

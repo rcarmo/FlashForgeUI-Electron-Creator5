@@ -56,17 +56,18 @@ public struct AddPrinterFormView: View {
                     addPrinter(clearOnSuccess: true)
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(trimmedAddress.isEmpty)
+                .disabled(!canSubmitPrinter)
 
                 Spacer()
 
                 Button(finishTitle) {
-                    if trimmedAddress.isEmpty {
+                    if printerAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         onFinish()
                     } else {
                         addPrinter(clearOnSuccess: false)
                     }
                 }
+                .disabled(!canSubmitPrinter && !trimmedAddress.isEmpty)
             }
         }
         .padding(.vertical, 4)
@@ -74,6 +75,10 @@ public struct AddPrinterFormView: View {
 
     private var trimmedAddress: String {
         printerAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canSubmitPrinter: Bool {
+        model.canSubmitManualPrinterAddress(printerAddress)
     }
 
     private func addPrinter(clearOnSuccess: Bool) {
