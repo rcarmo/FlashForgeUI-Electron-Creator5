@@ -129,6 +129,10 @@ public struct DashboardView: View {
     }
 
     private var actionReadinessMessage: String? {
+        if model.isDiscovering {
+            return "Discovery in progress."
+        }
+
         if model.printers.isEmpty {
             return model.connectKnownPrintersReadinessMessage
         }
