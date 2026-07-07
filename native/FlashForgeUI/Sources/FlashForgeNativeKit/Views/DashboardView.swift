@@ -160,7 +160,8 @@ public struct DashboardView: View {
                     } label: {
                         PrinterSummaryRow(printer: printer)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PrinterSummaryButtonStyle())
+                    .accessibilityHint("Opens printer details")
                 }
             }
         }
@@ -243,6 +244,10 @@ private struct PrinterSummaryRow: View {
                 Spacer()
 
                 StatusBadge(status: printer.status)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
 
             if let job = printer.activeJob {
@@ -272,8 +277,26 @@ private struct PrinterSummaryRow: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
-        .padding(14)
-        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+        .contentShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct PrinterSummaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(14)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(.quaternary, lineWidth: 1)
+            }
+            .overlay {
+                if configuration.isPressed {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.accentColor.opacity(0.12))
+                }
+            }
+            .scaleEffect(configuration.isPressed ? 0.995 : 1)
     }
 }
 
