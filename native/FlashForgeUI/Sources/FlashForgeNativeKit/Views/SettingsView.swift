@@ -115,16 +115,16 @@ public struct SettingsView: View {
                         .textFieldStyle(.roundedBorder)
                         .disabled(!model.customCameraEnabled)
 
+                    if let validationMessage = customCameraValidationMessage {
+                        Label(validationMessage, systemImage: "exclamationmark.triangle")
+                            .font(.callout)
+                            .foregroundStyle(.orange)
+                    }
+
                     Button("Reset Camera Settings") {
                         model.resetSelectedCameraSettings()
                     }
                     .disabled(!model.canResetSelectedCameraSettings)
-
-                    if let validationMessage = customCameraValidationMessage {
-                        Label(validationMessage, systemImage: "exclamationmark.triangle")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
 
                     LabeledContent("Resolved stream") {
                         Text(resolvedCameraDescription)
