@@ -526,7 +526,7 @@ public struct PrinterDetailView: View {
         var items = [
             TelemetryItem(title: "Nozzle", value: NativeFormatters.temperature(printer.nozzleTemperature)),
             TelemetryItem(title: "Bed", value: NativeFormatters.temperature(printer.bedTemperature)),
-            TelemetryItem(title: "Camera", value: printer.cameraState.rawValue)
+            TelemetryItem(title: "Camera", value: model.resolvedCameraState(for: printer).rawValue)
         ]
 
         if let material = printer.material {

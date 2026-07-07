@@ -167,6 +167,7 @@ public struct DashboardView: View {
                     } label: {
                         PrinterSummaryRow(
                             printer: printer,
+                            cameraState: model.resolvedCameraState(for: printer),
                             statusRefreshContextMessage: model.statusRefreshContextMessage(for: printer),
                             canRefreshStatus: model.canRefreshStatus(for: printer)
                         )
@@ -256,6 +257,7 @@ private struct MetricCard: View {
 
 private struct PrinterSummaryRow: View {
     let printer: PrinterSnapshot
+    let cameraState: CameraState
     let statusRefreshContextMessage: String
     let canRefreshStatus: Bool
 
@@ -321,7 +323,7 @@ private struct PrinterSummaryRow: View {
     private var metadataLabels: some View {
         Label(NativeFormatters.temperature(printer.nozzleTemperature), systemImage: "thermometer.medium")
         Label(NativeFormatters.temperature(printer.bedTemperature), systemImage: "rectangle.3.group")
-        Label(printer.cameraState.rawValue, systemImage: "video")
+        Label(cameraState.rawValue, systemImage: "video")
         Label(statusRefreshContextMessage, systemImage: canRefreshStatus ? "checkmark.circle" : "info.circle")
     }
 }

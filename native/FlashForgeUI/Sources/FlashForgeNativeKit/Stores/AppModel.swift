@@ -553,18 +553,26 @@ public final class AppModel {
             )
         }
 
-        let status = lastModernStatus
+        return cameraStreamConfig(for: printer)
+    }
+
+    public func cameraStreamConfig(for printer: PrinterSnapshot) -> CameraStreamConfig {
+        let status = modernStatusesByPrinterID[printer.id]
         let fallbackURL = supportsLocalCameraFallback(printer: printer, status: status)
             ? CameraStreamResolver.flashForgeMJPEGURL(ipAddress: printer.address)
             : ""
 
         return CameraStreamResolver.resolve(
-            userConfig: selectedCameraUserConfig,
+            userConfig: cameraConfigsByPrinterID[printer.id] ?? CameraUserConfig(),
             cameraFeatures: CameraFeatureConfig(
                 oemStreamURL: status?.cameraStreamURL ?? "",
                 fallbackStreamURL: fallbackURL
             )
         )
+    }
+
+    public func resolvedCameraState(for printer: PrinterSnapshot) -> CameraState {
+        cameraStreamConfig(for: printer).isAvailable ? .available : printer.cameraState
     }
 
     public var selectedCameraStreamURL: URL? {

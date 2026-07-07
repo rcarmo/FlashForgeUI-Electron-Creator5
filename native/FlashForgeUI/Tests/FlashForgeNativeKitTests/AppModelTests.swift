@@ -321,12 +321,15 @@ import Testing
     #expect(store.document.profiles.first?.cameraUserConfig?.customCameraURL == "rtsp://camera.local/live")
     #expect(model.selectedCameraStreamConfig.sourceType == .custom)
     #expect(model.selectedCameraStreamConfig.streamType == .rtsp)
+    #expect(model.resolvedCameraState(for: printer) == .available)
     #expect(model.canResetSelectedCameraSettings == true)
 
     model.resetSelectedCameraSettings()
 
     #expect(model.customCameraEnabled == false)
     #expect(model.customCameraURL == "")
+    #expect(model.selectedCameraStreamConfig.sourceType == .intelligentFallback)
+    #expect(model.resolvedCameraState(for: printer) == .available)
     #expect(model.canResetSelectedCameraSettings == false)
     #expect(store.document.profiles.first?.cameraUserConfig == nil)
     #expect(model.connectionMessage == "Camera settings reset for this printer.")
@@ -1325,6 +1328,7 @@ import Testing
     #expect(model.selectedCameraStreamConfig.sourceType == .intelligentFallback)
     #expect(model.selectedCameraStreamConfig.streamType == .mjpeg)
     #expect(model.selectedCameraStreamURL?.absoluteString == "http://192.168.1.44:8080/?action=stream")
+    #expect(model.resolvedCameraState(for: ad5xPrinter) == .available)
 
     model.selection = .printer(proPrinter.id)
 
@@ -1332,6 +1336,7 @@ import Testing
     #expect(model.selectedCameraStreamConfig.sourceType == .intelligentFallback)
     #expect(model.selectedCameraStreamConfig.streamType == .mjpeg)
     #expect(model.selectedCameraStreamURL?.absoluteString == "http://192.168.1.45:8080/?action=stream")
+    #expect(model.resolvedCameraState(for: proPrinter) == .available)
 }
 
 @MainActor
@@ -1356,6 +1361,7 @@ import Testing
     #expect(model.lastModernStatus == nil)
     #expect(model.selectedCameraStreamConfig.isAvailable == false)
     #expect(model.selectedCameraStreamURL == nil)
+    #expect(model.resolvedCameraState(for: printer) == .unavailable)
 }
 
 @MainActor
