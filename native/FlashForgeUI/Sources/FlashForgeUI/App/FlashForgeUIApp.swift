@@ -19,6 +19,14 @@ struct FlashForgeUIApp: App {
         }
         .commands {
             SidebarCommands()
+            CommandGroup(after: .newItem) {
+                Button("Open Job File...") {
+                    chooseJobFile()
+                }
+                .keyboardShortcut("o", modifiers: [.command])
+                .disabled(model.selectedPrinter == nil)
+            }
+
             CommandMenu("Printer") {
                 Button("Add Printer...") {
                     showsAddPrinter = true
@@ -68,7 +76,6 @@ struct FlashForgeUIApp: App {
                 Button("Choose Job File...") {
                     chooseJobFile()
                 }
-                .keyboardShortcut("o", modifiers: [.command, .shift])
                 .disabled(model.selectedPrinter == nil)
 
                 Button("Upload Selected Job") {
@@ -113,7 +120,7 @@ struct FlashForgeUIApp: App {
         }
 
         if panel.runModal() == .OK, let fileURL = panel.url {
-            model.selectUploadFile(fileURL)
+            model.openJobFile(fileURL)
         }
     }
 
