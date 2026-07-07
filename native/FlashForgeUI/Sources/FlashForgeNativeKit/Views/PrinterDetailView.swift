@@ -162,6 +162,13 @@ public struct PrinterDetailView: View {
                     .font(.title2.weight(.semibold))
                 Text(printer.status.rawValue)
                     .foregroundStyle(.secondary)
+                if let pendingJobSummary = model.selectedPendingJobSummary {
+                    Label(pendingJobSummary, systemImage: "doc.text")
+                        .font(.callout)
+                    Label(model.selectedUploadActionSummary, systemImage: "checklist")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(16)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))

@@ -444,6 +444,14 @@ public final class AppModel {
         selectedUploadFileURL?.lastPathComponent ?? "No file selected"
     }
 
+    public var selectedPendingJobSummary: String? {
+        guard selectedUploadFileURL != nil else {
+            return nil
+        }
+
+        return "\(selectedUploadFileName) selected for upload."
+    }
+
     public var selectedUploadActionSummary: String {
         if startPrintAfterUpload {
             return levelingBeforePrint
