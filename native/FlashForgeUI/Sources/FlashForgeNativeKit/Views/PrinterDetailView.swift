@@ -297,7 +297,7 @@ public struct PrinterDetailView: View {
                 Label("Clear Job File", systemImage: "xmark.circle")
             }
             .controlSize(.large)
-            .disabled(model.selectedUploadFileURL == nil)
+            .disabled(!model.canClearSelectedUploadFile)
 
             Toggle("Start after upload", isOn: $model.startPrintAfterUpload)
 
@@ -334,7 +334,7 @@ public struct PrinterDetailView: View {
             Label("Recent Files", systemImage: "clock")
         }
         .controlSize(.large)
-        .disabled(model.recentUploadFileURLs.isEmpty)
+        .disabled(!model.canClearRecentUploadFiles)
     }
 
     private var selectedUploadFileSummary: some View {

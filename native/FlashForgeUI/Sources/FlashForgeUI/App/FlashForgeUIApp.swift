@@ -78,6 +78,16 @@ struct FlashForgeUIApp: App {
                 }
                 .disabled(!model.canOpenJobFile)
 
+                Button("Clear Job File") {
+                    model.clearSelectedUploadFile()
+                }
+                .disabled(!model.canClearSelectedUploadFile)
+
+                Button("Clear Recent Job Files") {
+                    model.clearRecentUploadFiles()
+                }
+                .disabled(!model.canClearRecentUploadFiles)
+
                 Button("Upload Selected Job") {
                     Task { await model.uploadSelectedJob() }
                 }

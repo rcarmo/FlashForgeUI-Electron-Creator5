@@ -1425,12 +1425,14 @@ import Testing
     model.selectUploadFile(firstFileURL)
     #expect(model.selectedUploadFileURL == firstFileURL)
     #expect(model.selectedUploadFileName == "studio.gcode")
+    #expect(model.canClearSelectedUploadFile == true)
     #expect(model.selectedUploadReadinessMessage == "Enter the printer check code to upload a job.")
     #expect(model.canUploadSelectedJob == false)
 
     model.selection = .printer(secondPrinter.id)
     #expect(model.selectedUploadFileURL == nil)
     #expect(model.selectedUploadFileName == "No file selected")
+    #expect(model.canClearSelectedUploadFile == false)
     #expect(model.selectedUploadReadinessMessage == "Choose a job file first.")
     #expect(model.canUploadSelectedJob == false)
 
@@ -1441,6 +1443,7 @@ import Testing
     model.clearSelectedUploadFile()
     #expect(model.selectedUploadFileURL == nil)
     #expect(model.selectedUploadFileName == "No file selected")
+    #expect(model.canClearSelectedUploadFile == false)
     #expect(model.selectedUploadReadinessMessage == "Choose a job file first.")
     #expect(model.connectionMessage == "Selected job file cleared.")
 
@@ -1484,12 +1487,15 @@ import Testing
     model.selectUploadFile(secondFileURL)
     model.selectUploadFile(firstFileURL)
     #expect(model.recentUploadFileURLs == [firstFileURL, secondFileURL])
+    #expect(model.canClearRecentUploadFiles == true)
 
     model.selection = .printer(secondPrinter.id)
     #expect(model.recentUploadFileURLs.isEmpty)
+    #expect(model.canClearRecentUploadFiles == false)
 
     model.selectUploadFile(thirdFileURL)
     #expect(model.recentUploadFileURLs == [thirdFileURL])
+    #expect(model.canClearRecentUploadFiles == true)
 
     model.selection = .printer(firstPrinter.id)
     #expect(model.recentUploadFileURLs == [firstFileURL, secondFileURL])
@@ -1550,6 +1556,7 @@ import Testing
     )
 
     #expect(model.recentUploadFileURLs == [savedFileURL])
+    #expect(model.canClearRecentUploadFiles == true)
 
     model.selectUploadFile(newFileURL)
 
@@ -1559,6 +1566,7 @@ import Testing
     model.clearRecentUploadFiles()
 
     #expect(model.recentUploadFileURLs.isEmpty)
+    #expect(model.canClearRecentUploadFiles == false)
     #expect(store.document.profiles.first?.recentUploadFileURLs == [])
     #expect(model.connectionMessage == "Recent job files cleared.")
 }

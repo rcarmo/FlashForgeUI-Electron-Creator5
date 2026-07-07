@@ -396,12 +396,20 @@ public final class AppModel {
         selectedUploadFileURL?.lastPathComponent ?? "No file selected"
     }
 
+    public var canClearSelectedUploadFile: Bool {
+        selectedUploadFileURL != nil
+    }
+
     public var recentUploadFileURLs: [URL] {
         guard let selectedPrinter else {
             return []
         }
 
         return recentUploadFileURLsByPrinterID[selectedPrinter.id] ?? []
+    }
+
+    public var canClearRecentUploadFiles: Bool {
+        !recentUploadFileURLs.isEmpty
     }
 
     public var selectedCameraStreamConfig: CameraStreamConfig {
