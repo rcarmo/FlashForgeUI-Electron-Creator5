@@ -682,6 +682,7 @@ import Testing
 
     #expect(model.selectedPrinterStatusRefreshReadinessMessage == nil)
     #expect(model.canRefreshSelectedPrinterStatus == true)
+    #expect(model.selectedPrinterStatusRecencySummary == "Status not refreshed yet.")
 
     await model.refreshSelectedPrinterStatus()
 
@@ -693,6 +694,8 @@ import Testing
     #expect(model.selectedPrinter?.materialStation?.slots.first?.materialType == "PLA")
     #expect(model.selectedCameraStreamConfig.sourceType == .oem)
     #expect(model.selectedCameraStreamConfig.streamURL?.absoluteString == "rtsp://192.168.1.44/live")
+    #expect(model.lastUpdated != nil)
+    #expect(model.selectedPrinterStatusRecencySummary != "Status not refreshed yet.")
     #expect(model.connectionMessage == "Desk Printer status is Printing.")
     #expect(model.isRefreshingStatus == false)
 }

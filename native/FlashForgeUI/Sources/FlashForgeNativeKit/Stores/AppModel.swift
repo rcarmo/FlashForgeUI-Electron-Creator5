@@ -247,6 +247,18 @@ public final class AppModel {
         return "Serial \(serialNumber)"
     }
 
+    public var selectedPrinterStatusRecencySummary: String? {
+        guard selectedPrinter != nil else {
+            return nil
+        }
+
+        guard lastUpdated != nil else {
+            return "Status not refreshed yet."
+        }
+
+        return "Updated \(NativeFormatters.relativeUpdate(lastUpdated))"
+    }
+
     public var availableJobCommands: Set<PrinterJobCommand> {
         guard let printer = selectedPrinter else {
             return []

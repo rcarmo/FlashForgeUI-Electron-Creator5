@@ -119,6 +119,11 @@ public struct PrinterDetailView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            if let recencySummary = model.selectedPrinterStatusRecencySummary {
+                Label(recencySummary, systemImage: "clock")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
             if let connectReadinessMessage = model.selectedPrinterConnectReadinessMessage {
                 Label(connectReadinessMessage, systemImage: "info.circle")
                     .font(.callout)
