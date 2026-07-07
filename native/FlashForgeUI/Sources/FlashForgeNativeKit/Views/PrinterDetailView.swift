@@ -287,6 +287,8 @@ public struct PrinterDetailView: View {
             }
             .controlSize(.large)
 
+            recentFilesMenu
+
             Text(model.selectedUploadFileName)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -304,6 +306,24 @@ public struct PrinterDetailView: View {
             .controlSize(.large)
             .disabled(!model.canUploadSelectedJob)
         }
+    }
+
+    private var recentFilesMenu: some View {
+        Menu {
+            if model.recentUploadFileURLs.isEmpty {
+                Text("No Recent Files")
+            } else {
+                ForEach(model.recentUploadFileURLs, id: \.self) { fileURL in
+                    Button(fileURL.lastPathComponent) {
+                        _ = model.openJobFile(fileURL)
+                    }
+                }
+            }
+        } label: {
+            Label("Recent", systemImage: "clock")
+        }
+        .controlSize(.large)
+        .disabled(model.recentUploadFileURLs.isEmpty)
     }
 
     private var uploadDropZone: some View {

@@ -1216,6 +1216,77 @@ import Testing
 }
 
 @MainActor
+@Test func recentUploadFilesAreRememberedPerPrinter() async {
+    let firstPrinter = PrinterSnapshot(
+        name: "Studio",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-FIRST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let secondPrinter = PrinterSnapshot(
+        name: "Workshop",
+        model: "AD5X",
+        address: "192.168.1.45",
+        serialNumber: "SN-SECOND",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 31),
+        bedTemperature: TemperatureReading(current: 29)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [firstPrinter, secondPrinter]
+    )
+    let firstFileURL = URL(fileURLWithPath: "/tmp/studio.gcode")
+    let secondFileURL = URL(fileURLWithPath: "/tmp/plate.3mf")
+    let thirdFileURL = URL(fileURLWithPath: "/tmp/workshop.gx")
+
+    model.selection = .printer(firstPrinter.id)
+    model.selectUploadFile(firstFileURL)
+    model.selectUploadFile(secondFileURL)
+    model.selectUploadFile(firstFileURL)
+    #expect(model.recentUploadFileURLs == [firstFileURL, secondFileURL])
+
+    model.selection = .printer(secondPrinter.id)
+    #expect(model.recentUploadFileURLs.isEmpty)
+
+    model.selectUploadFile(thirdFileURL)
+    #expect(model.recentUploadFileURLs == [thirdFileURL])
+
+    model.selection = .printer(firstPrinter.id)
+    #expect(model.recentUploadFileURLs == [firstFileURL, secondFileURL])
+}
+
+@MainActor
+@Test func recentUploadFilesIgnoreUnsupportedSelections() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+
+    model.selectUploadFile(URL(fileURLWithPath: "/tmp/notes.txt"))
+
+    #expect(model.recentUploadFileURLs.isEmpty)
+}
+
+@MainActor
 @Test func openJobFileRequiresSelectedPrinter() async {
     let model = AppModel(service: EmptyPrinterService(), bootstrapClient: FakeBootstrapClient())
 

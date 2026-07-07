@@ -121,6 +121,7 @@ public final class AppModel {
     private var printerInfoByPrinterID: [UUID: PrinterInfo]
     private var modernStatusesByPrinterID: [UUID: ModernPrinterStatus]
     private var uploadFileURLsByPrinterID: [UUID: URL]
+    private var recentUploadFileURLsByPrinterID: [UUID: [URL]]
     private var isApplyingProfileSettings: Bool
     private var hasStarted: Bool
 
@@ -160,6 +161,7 @@ public final class AppModel {
         self.printerInfoByPrinterID = [:]
         self.modernStatusesByPrinterID = [:]
         self.uploadFileURLsByPrinterID = [:]
+        self.recentUploadFileURLsByPrinterID = [:]
         self.isApplyingProfileSettings = false
         self.hasStarted = false
         self.connectionMessage = printers.isEmpty ? "Discover printers on your local network." : nil
@@ -390,6 +392,14 @@ public final class AppModel {
         selectedUploadFileURL?.lastPathComponent ?? "No file selected"
     }
 
+    public var recentUploadFileURLs: [URL] {
+        guard let selectedPrinter else {
+            return []
+        }
+
+        return recentUploadFileURLsByPrinterID[selectedPrinter.id] ?? []
+    }
+
     public var selectedCameraStreamConfig: CameraStreamConfig {
         guard let printer = selectedPrinter else {
             return CameraStreamConfig(
@@ -458,6 +468,7 @@ public final class AppModel {
         }
 
         selectedUploadFileURL = fileURL
+        rememberRecentUploadFile(fileURL)
         connectionMessage = "\(fileURL.lastPathComponent) selected."
     }
 
@@ -478,6 +489,7 @@ public final class AppModel {
         }
 
         selectedUploadFileURL = fileURL
+        rememberRecentUploadFile(fileURL)
         connectionMessage = "\(fileURL.lastPathComponent) selected."
         return true
     }
@@ -571,6 +583,7 @@ public final class AppModel {
         printerInfoByPrinterID.removeValue(forKey: removedPrinterID)
         modernStatusesByPrinterID.removeValue(forKey: removedPrinterID)
         uploadFileURLsByPrinterID.removeValue(forKey: removedPrinterID)
+        recentUploadFileURLsByPrinterID.removeValue(forKey: removedPrinterID)
         saveProfiles()
         connectionMessage = "Forgot \(removedPrinterName)."
     }
@@ -1064,6 +1077,17 @@ public final class AppModel {
 
     private func isSupportedUploadFile(_ fileURL: URL) -> Bool {
         Self.supportedUploadFileExtensions.contains(fileURL.pathExtension.lowercased())
+    }
+
+    private func rememberRecentUploadFile(_ fileURL: URL) {
+        guard isSupportedUploadFile(fileURL), let selectedPrinter else {
+            return
+        }
+
+        var recentFiles = recentUploadFileURLsByPrinterID[selectedPrinter.id] ?? []
+        recentFiles.removeAll { $0 == fileURL }
+        recentFiles.insert(fileURL, at: 0)
+        recentUploadFileURLsByPrinterID[selectedPrinter.id] = Array(recentFiles.prefix(5))
     }
 
     private func merge(info: PrinterInfo, intoPrinterID printerID: UUID) {
