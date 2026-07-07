@@ -1208,6 +1208,8 @@ import Testing
 
     #expect(refreshedCount == 0)
     #expect(client.requestCount == 2)
+    #expect(model.statusFailureSummary(for: model.printers[0]) == "Last refresh failed. Check the check code and network.")
+    #expect(model.statusFailureSummary(for: model.printers[1]) == "Last refresh failed. Check the check code and network.")
     #expect(model.connectionMessage == "Could not refresh any printers. Check saved check codes and network.")
     #expect(model.isRefreshingAllStatuses == false)
 }

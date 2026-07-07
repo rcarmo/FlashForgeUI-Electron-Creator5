@@ -284,7 +284,11 @@ public final class AppModel {
             return nil
         }
 
-        return statusFailureMessagesByPrinterID[printer.id]
+        return statusFailureSummary(for: printer)
+    }
+
+    public func statusFailureSummary(for printer: PrinterSnapshot) -> String? {
+        statusFailureMessagesByPrinterID[printer.id]
     }
 
     public var availableJobCommands: Set<PrinterJobCommand> {

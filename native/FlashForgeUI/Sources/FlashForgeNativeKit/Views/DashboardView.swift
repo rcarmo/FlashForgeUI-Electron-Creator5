@@ -172,6 +172,7 @@ public struct DashboardView: View {
                         PrinterSummaryRow(
                             printer: printer,
                             cameraState: model.resolvedCameraState(for: printer),
+                            statusFailureSummary: model.statusFailureSummary(for: printer),
                             statusRefreshContextMessage: model.statusRefreshContextMessage(for: printer),
                             canRefreshStatus: model.canRefreshStatus(for: printer)
                         )
@@ -262,6 +263,7 @@ private struct MetricCard: View {
 private struct PrinterSummaryRow: View {
     let printer: PrinterSnapshot
     let cameraState: CameraState
+    let statusFailureSummary: String?
     let statusRefreshContextMessage: String
     let canRefreshStatus: Bool
 
@@ -319,6 +321,12 @@ private struct PrinterSummaryRow: View {
             }
             .font(.caption)
             .foregroundStyle(.secondary)
+
+            if let statusFailureSummary {
+                Label(statusFailureSummary, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
         }
         .contentShape(RoundedRectangle(cornerRadius: 8))
     }
