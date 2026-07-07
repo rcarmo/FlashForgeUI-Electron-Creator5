@@ -454,6 +454,10 @@ public final class AppModel {
         return !isPreviewPrinter(selectedPrinter)
     }
 
+    public var canOpenJobFile: Bool {
+        selectedPrinter != nil || printers.count == 1
+    }
+
     public func start(discoverOnLaunch: Bool) async {
         guard !hasStarted else {
             return

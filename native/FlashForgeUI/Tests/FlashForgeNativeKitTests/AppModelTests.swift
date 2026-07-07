@@ -1570,6 +1570,7 @@ import Testing
     let didOpen = model.openJobFile(URL(fileURLWithPath: "/tmp/benchy.gcode"))
 
     #expect(didOpen == false)
+    #expect(model.canOpenJobFile == false)
     #expect(model.selectedUploadFileURL == nil)
     #expect(model.connectionMessage == "Select a printer first.")
 }
@@ -1592,6 +1593,8 @@ import Testing
         printers: [printer]
     )
     let fileURL = URL(fileURLWithPath: "/tmp/benchy.gcode")
+
+    #expect(model.canOpenJobFile == true)
 
     let didOpen = model.openJobFile(fileURL)
 
@@ -1632,6 +1635,7 @@ import Testing
     let didOpen = model.openJobFile(URL(fileURLWithPath: "/tmp/benchy.gcode"))
 
     #expect(didOpen == false)
+    #expect(model.canOpenJobFile == false)
     #expect(model.selection == .dashboard)
     #expect(model.selectedUploadFileURL == nil)
     #expect(model.connectionMessage == "Select a printer first.")

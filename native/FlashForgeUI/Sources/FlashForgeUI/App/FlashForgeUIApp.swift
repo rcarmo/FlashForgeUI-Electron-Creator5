@@ -24,7 +24,7 @@ struct FlashForgeUIApp: App {
                     chooseJobFile()
                 }
                 .keyboardShortcut("o", modifiers: [.command])
-                .disabled(model.selectedPrinter == nil)
+                .disabled(!model.canOpenJobFile)
             }
 
             CommandMenu("Printer") {
@@ -76,7 +76,7 @@ struct FlashForgeUIApp: App {
                 Button("Choose Job File...") {
                     chooseJobFile()
                 }
-                .disabled(model.selectedPrinter == nil)
+                .disabled(!model.canOpenJobFile)
 
                 Button("Upload Selected Job") {
                     Task { await model.uploadSelectedJob() }
