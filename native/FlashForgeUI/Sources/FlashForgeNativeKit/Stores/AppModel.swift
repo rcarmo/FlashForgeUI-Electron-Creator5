@@ -687,7 +687,7 @@ public final class AppModel {
         }
 
         guard !printers.isEmpty else {
-            connectionMessage = "Select a printer first."
+            connectionMessage = "Add or discover a printer before opening a job file."
             return false
         }
 

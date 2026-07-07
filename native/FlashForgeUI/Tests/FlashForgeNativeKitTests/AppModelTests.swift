@@ -2101,7 +2101,7 @@ import Testing
     #expect(didOpen == false)
     #expect(model.canOpenJobFile == false)
     #expect(model.selectedUploadFileURL == nil)
-    #expect(model.connectionMessage == "Select a printer first.")
+    #expect(model.connectionMessage == "Add or discover a printer before opening a job file.")
 }
 
 @MainActor
