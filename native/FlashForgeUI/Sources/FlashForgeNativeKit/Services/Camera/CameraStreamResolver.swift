@@ -38,19 +38,22 @@ public struct CameraStreamConfig: Equatable, Sendable {
     public var streamURL: URL?
     public var isAvailable: Bool
     public var unavailableReason: String?
+    public var recoverySuggestion: String?
 
     public init(
         sourceType: CameraSourceType,
         streamType: CameraStreamType? = nil,
         streamURL: URL? = nil,
         isAvailable: Bool,
-        unavailableReason: String? = nil
+        unavailableReason: String? = nil,
+        recoverySuggestion: String? = nil
     ) {
         self.sourceType = sourceType
         self.streamType = streamType
         self.streamURL = streamURL
         self.isAvailable = isAvailable
         self.unavailableReason = unavailableReason
+        self.recoverySuggestion = recoverySuggestion
     }
 }
 
@@ -97,7 +100,8 @@ public enum CameraStreamResolver {
                 return CameraStreamConfig(
                     sourceType: .custom,
                     isAvailable: false,
-                    unavailableReason: "Custom camera URL is invalid: \(error.description)"
+                    unavailableReason: "Custom camera URL is invalid: \(error.description)",
+                    recoverySuggestion: "Update the custom camera URL in Settings."
                 )
             }
         }
@@ -123,7 +127,8 @@ public enum CameraStreamResolver {
         return CameraStreamConfig(
             sourceType: .none,
             isAvailable: false,
-            unavailableReason: "Printer is not reporting an OEM camera stream and no custom camera URL is configured"
+            unavailableReason: "No camera stream is available for this printer.",
+            recoverySuggestion: "Refresh status or set a custom camera URL in Settings."
         )
     }
 

@@ -69,6 +69,12 @@ public struct CameraPreviewView: View {
             Text(config.unavailableReason ?? "Camera unavailable")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+            if let recoverySuggestion = config.recoverySuggestion {
+                Text(recoverySuggestion)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.quaternary.opacity(0.35))
