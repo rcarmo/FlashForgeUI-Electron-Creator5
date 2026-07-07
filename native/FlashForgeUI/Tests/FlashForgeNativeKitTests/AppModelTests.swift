@@ -757,6 +757,44 @@ import Testing
 }
 
 @MainActor
+@Test func statusRefreshContextExplainsPrinterCredentialState() async {
+    let identifiedPrinter = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "Unknown",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let unidentifiedPrinter = PrinterSnapshot(
+        name: "New Printer",
+        model: "Unknown",
+        address: "192.168.1.45",
+        status: .offline,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [identifiedPrinter, unidentifiedPrinter]
+    )
+
+    #expect(model.statusRefreshContextMessage(for: identifiedPrinter) == "Needs check code.")
+    #expect(model.canRefreshStatus(for: identifiedPrinter) == false)
+    #expect(model.statusRefreshContextMessage(for: unidentifiedPrinter) == "Identify printer first.")
+    #expect(model.canRefreshStatus(for: unidentifiedPrinter) == false)
+
+    model.selection = .printer(identifiedPrinter.id)
+    model.checkCode = "123456"
+
+    #expect(model.statusRefreshContextMessage(for: identifiedPrinter) == "Ready to refresh.")
+    #expect(model.canRefreshStatus(for: identifiedPrinter) == true)
+}
+
+@MainActor
 @Test func backgroundRefreshUsesModernClientWhenCredentialsAreReady() async {
     let client = RecordingModernClient(status: .printing)
     let printer = PrinterSnapshot(

@@ -158,7 +158,11 @@ public struct DashboardView: View {
                     Button {
                         model.selection = .printer(printer.id)
                     } label: {
-                        PrinterSummaryRow(printer: printer)
+                        PrinterSummaryRow(
+                            printer: printer,
+                            statusRefreshContextMessage: model.statusRefreshContextMessage(for: printer),
+                            canRefreshStatus: model.canRefreshStatus(for: printer)
+                        )
                     }
                     .buttonStyle(PrinterSummaryButtonStyle())
                     .accessibilityHint("Opens printer details")
@@ -245,6 +249,8 @@ private struct MetricCard: View {
 
 private struct PrinterSummaryRow: View {
     let printer: PrinterSnapshot
+    let statusRefreshContextMessage: String
+    let canRefreshStatus: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -289,15 +295,27 @@ private struct PrinterSummaryRow: View {
                 }
             }
 
-            HStack(spacing: 16) {
-                Label(NativeFormatters.temperature(printer.nozzleTemperature), systemImage: "thermometer.medium")
-                Label(NativeFormatters.temperature(printer.bedTemperature), systemImage: "rectangle.3.group")
-                Label(printer.cameraState.rawValue, systemImage: "video")
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 16) {
+                    metadataLabels
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    metadataLabels
+                }
             }
             .font(.caption)
             .foregroundStyle(.secondary)
         }
         .contentShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private var metadataLabels: some View {
+        Label(NativeFormatters.temperature(printer.nozzleTemperature), systemImage: "thermometer.medium")
+        Label(NativeFormatters.temperature(printer.bedTemperature), systemImage: "rectangle.3.group")
+        Label(printer.cameraState.rawValue, systemImage: "video")
+        Label(statusRefreshContextMessage, systemImage: canRefreshStatus ? "checkmark.circle" : "info.circle")
     }
 }
 

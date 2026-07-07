@@ -315,7 +315,23 @@ public final class AppModel {
     }
 
     public var refreshablePrinterCount: Int {
-        printers.filter(canRefreshStatus).count
+        printers.filter(isStatusRefreshable).count
+    }
+
+    public func canRefreshStatus(for printer: PrinterSnapshot) -> Bool {
+        isStatusRefreshable(printer)
+    }
+
+    public func statusRefreshContextMessage(for printer: PrinterSnapshot) -> String {
+        guard let serialNumber = printer.serialNumber, !serialNumber.isEmpty else {
+            return "Identify printer first."
+        }
+
+        guard storedCheckCode(for: printer.id) != nil else {
+            return "Needs check code."
+        }
+
+        return "Ready to refresh."
     }
 
     public var canConnectSelectedPrinter: Bool {
@@ -874,7 +890,7 @@ public final class AppModel {
             return 0
         }
 
-        let targets = printers.filter(canRefreshStatus)
+        let targets = printers.filter(isStatusRefreshable)
         guard !targets.isEmpty else {
             if announcesProgress {
                 connectionMessage = "Connect printers and save check codes before refreshing all."
@@ -1121,7 +1137,7 @@ public final class AppModel {
         printer.address.hasPrefix("preview.")
     }
 
-    private func canRefreshStatus(_ printer: PrinterSnapshot) -> Bool {
+    private func isStatusRefreshable(_ printer: PrinterSnapshot) -> Bool {
         guard let serialNumber = printer.serialNumber, !serialNumber.isEmpty else {
             return false
         }
