@@ -320,26 +320,39 @@ public struct PrinterDetailView: View {
     }
 
     private var uploadControls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: 10) {
+                uploadPrimaryActions
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                uploadPrimaryActions
+            }
+        }
+        .controlSize(.large)
+    }
+
+    private var uploadPrimaryActions: some View {
         Group {
             Button {
                 showsUploadImporter = true
             } label: {
                 Label("Choose Job File", systemImage: "doc.badge.plus")
             }
-            .controlSize(.large)
 
             recentFilesMenu
-
-            selectedUploadFileSummary
 
             Button {
                 model.clearSelectedUploadFile()
             } label: {
                 Label("Clear Job File", systemImage: "xmark.circle")
             }
-            .controlSize(.large)
             .disabled(!model.canClearSelectedUploadFile)
+        }
+    }
 
+    private var uploadOptions: some View {
+        VStack(alignment: .leading, spacing: 8) {
             Toggle("Start after upload", isOn: $model.startPrintAfterUpload)
 
             Toggle("Level before print", isOn: $model.levelingBeforePrint)
@@ -347,15 +360,17 @@ public struct PrinterDetailView: View {
             Label(model.selectedUploadActionSummary, systemImage: "checklist")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-
-            Button {
-                Task { await model.uploadSelectedJob() }
-            } label: {
-                Label(model.isUploadingJob ? "Uploading" : "Upload Job", systemImage: "square.and.arrow.up")
-            }
-            .controlSize(.large)
-            .disabled(!model.canUploadSelectedJob)
         }
+    }
+
+    private var uploadButton: some View {
+        Button {
+            Task { await model.uploadSelectedJob() }
+        } label: {
+            Label(model.isUploadingJob ? "Uploading" : "Upload Job", systemImage: "square.and.arrow.up")
+        }
+        .controlSize(.large)
+        .disabled(!model.canUploadSelectedJob)
     }
 
     private var recentFilesMenu: some View {
@@ -388,35 +403,73 @@ public struct PrinterDetailView: View {
     }
 
     private var selectedUploadFileSummary: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(model.selectedUploadFileSummary?.fileName ?? "No file selected")
-                .lineLimit(1)
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: isUploadDropTargeted ? "tray.and.arrow.down.fill" : "doc.text")
+                .font(.title2)
+                .foregroundStyle(model.selectedUploadFileURL == nil ? .secondary : .primary)
+                .frame(width: 28)
 
-            if let location = model.selectedUploadFileSummary?.location {
-                Text(location)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(model.selectedUploadFileSummary?.fileName ?? uploadDropPrompt)
+                    .font(.headline)
                     .lineLimit(1)
-                    .truncationMode(.middle)
+
+                if let location = model.selectedUploadFileSummary?.location {
+                    Text(location)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                } else {
+                    Text("Choose, reopen, or drop a .gcode, .gx, or .3mf file.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .foregroundStyle(model.selectedUploadFileURL == nil ? .secondary : .primary)
-        .frame(maxWidth: 260, alignment: .leading)
+        .padding(12)
+        .background(
+            isUploadDropTargeted ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.08),
+            in: RoundedRectangle(cornerRadius: 8)
+        )
     }
 
     private var uploadDropZone: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline) {
-                    uploadControls
-                }
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Label("Job File", systemImage: "doc.badge.plus")
+                    .font(.headline)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    uploadControls
-                }
+                Spacer()
+
+                uploadButton
             }
 
-            uploadDropHint
+            selectedUploadFileSummary
+
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 16) {
+                    uploadControls
+                    Spacer(minLength: 12)
+                    uploadOptions
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    uploadControls
+                    uploadOptions
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(
+                    isUploadDropTargeted ? Color.accentColor : Color.secondary.opacity(0.3),
+                    style: StrokeStyle(lineWidth: isUploadDropTargeted ? 2 : 1, dash: [5, 4])
+                )
         }
         .dropDestination(for: URL.self) { urls, _ in
             guard let fileURL = urls.first else {
@@ -429,23 +482,8 @@ public struct PrinterDetailView: View {
         }
     }
 
-    private var uploadDropHint: some View {
-        Label(isUploadDropTargeted ? "Release job file" : "Drop job file", systemImage: "tray.and.arrow.down")
-            .font(.callout)
-            .foregroundStyle(isUploadDropTargeted ? .primary : .secondary)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 10)
-            .background(
-                isUploadDropTargeted ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.08),
-                in: RoundedRectangle(cornerRadius: 8)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(
-                        isUploadDropTargeted ? Color.accentColor : Color.secondary.opacity(0.35),
-                        style: StrokeStyle(lineWidth: 1, dash: [4, 4])
-                    )
-            }
+    private var uploadDropPrompt: String {
+        isUploadDropTargeted ? "Release job file" : "No file selected"
     }
 
     private var telemetrySection: some View {
