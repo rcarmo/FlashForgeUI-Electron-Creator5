@@ -263,7 +263,7 @@ public struct PrinterDetailView: View {
     }
 
     private var checkCodeField: some View {
-        TextField("Check code", text: $model.checkCode)
+        SecureField("Check code", text: $model.checkCode)
             .textFieldStyle(.roundedBorder)
             .frame(maxWidth: 220)
     }
