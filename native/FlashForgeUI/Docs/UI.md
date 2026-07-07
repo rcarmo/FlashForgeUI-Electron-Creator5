@@ -3,6 +3,9 @@
 This native app incorporates the design rules from `praeclarum/ui.md`:
 https://github.com/praeclarum/ui.md
 
+For current platform coverage and Mac beta status, see
+[`PORT_STATUS.md`](PORT_STATUS.md).
+
 The upstream rule set is intentionally simple: a UI is good when the program
 behaves the way the user expected. FlashForgeUI should therefore optimize for
 user control, predictability, and task completion rather than novelty, density,
