@@ -333,6 +333,30 @@ public final class AppModel {
             return activeJobCommand == command ? "Sending \(command.rawValue)." : "Sending another job command."
         }
 
+        if isDiscovering {
+            return "Discovery in progress."
+        }
+
+        if isConnecting {
+            return "Connecting to this printer."
+        }
+
+        if isConnectingKnownPrinters {
+            return "Identifying printers."
+        }
+
+        if isRefreshingStatus {
+            return "Refreshing this printer."
+        }
+
+        if isRefreshingAllStatuses {
+            return "Refreshing printer statuses."
+        }
+
+        if isUploadingJob {
+            return "Upload in progress."
+        }
+
         guard let printer = selectedPrinter else {
             return "Select a printer first."
         }
@@ -359,6 +383,30 @@ public final class AppModel {
     public var selectedUploadReadinessMessage: String? {
         if isUploadingJob {
             return "Upload in progress."
+        }
+
+        if isDiscovering {
+            return "Discovery in progress."
+        }
+
+        if isConnecting {
+            return "Connecting to this printer."
+        }
+
+        if isConnectingKnownPrinters {
+            return "Identifying printers."
+        }
+
+        if isRefreshingStatus {
+            return "Refreshing this printer."
+        }
+
+        if isRefreshingAllStatuses {
+            return "Refreshing printer statuses."
+        }
+
+        if isSendingJobCommand {
+            return "Sending job command."
         }
 
         guard let printer = selectedPrinter else {
@@ -425,6 +473,22 @@ public final class AppModel {
             return "Identifying printers."
         }
 
+        if isRefreshingStatus {
+            return "Refreshing this printer."
+        }
+
+        if isRefreshingAllStatuses {
+            return "Refreshing printer statuses."
+        }
+
+        if isUploadingJob {
+            return "Upload in progress."
+        }
+
+        if isSendingJobCommand {
+            return "Sending job command."
+        }
+
         guard selectedPrinter != nil else {
             return "Select a printer first."
         }
@@ -447,6 +511,22 @@ public final class AppModel {
 
         if isRefreshingAllStatuses {
             return "Refreshing printer statuses."
+        }
+
+        if isConnecting {
+            return "Connecting to this printer."
+        }
+
+        if isConnectingKnownPrinters {
+            return "Identifying printers."
+        }
+
+        if isUploadingJob {
+            return "Upload in progress."
+        }
+
+        if isSendingJobCommand {
+            return "Sending job command."
         }
 
         guard let printer = selectedPrinter else {
@@ -485,6 +565,22 @@ public final class AppModel {
             return "Connecting to the selected printer."
         }
 
+        if isRefreshingStatus {
+            return "Refreshing the selected printer."
+        }
+
+        if isRefreshingAllStatuses {
+            return "Refreshing printer statuses."
+        }
+
+        if isUploadingJob {
+            return "Upload in progress."
+        }
+
+        if isSendingJobCommand {
+            return "Sending job command."
+        }
+
         guard !printers.isEmpty else {
             return "Add or discover printers first."
         }
@@ -503,6 +599,22 @@ public final class AppModel {
 
         if isRefreshingStatus {
             return "Refreshing the selected printer."
+        }
+
+        if isConnecting {
+            return "Connecting to the selected printer."
+        }
+
+        if isConnectingKnownPrinters {
+            return "Identifying printers."
+        }
+
+        if isUploadingJob {
+            return "Upload in progress."
+        }
+
+        if isSendingJobCommand {
+            return "Sending job command."
         }
 
         guard !printers.isEmpty else {

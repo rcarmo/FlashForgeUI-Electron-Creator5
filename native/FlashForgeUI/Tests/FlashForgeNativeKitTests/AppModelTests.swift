@@ -79,6 +79,40 @@ import Testing
     #expect(model.canRefreshSelectedPrinterStatus == false)
     #expect(model.refreshKnownPrinterStatusesReadinessMessage == "Discovery in progress.")
     #expect(model.canRefreshKnownPrinterStatuses == false)
+    #expect(model.selectedUploadReadinessMessage == "Discovery in progress.")
+    #expect(model.canUploadSelectedJob == false)
+    #expect(model.selectedPrinterJobCommandReadinessMessage(for: .cancel) == "Discovery in progress.")
+    #expect(model.canSendSelectedPrinterJobCommand(.cancel) == false)
+}
+
+@MainActor
+@Test func uploadInProgressPausesOtherPrinterNetworkActions() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .printing,
+        nozzleTemperature: TemperatureReading(current: 221),
+        bedTemperature: TemperatureReading(current: 58),
+        activeJob: PrintJobSnapshot(fileName: "benchy.3mf", progress: 0.4)
+    )
+    let model = AppModel(service: EmptyPrinterService(), bootstrapClient: FakeBootstrapClient(), printers: [printer])
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+    model.isUploadingJob = true
+
+    #expect(model.selectedPrinterConnectReadinessMessage == "Upload in progress.")
+    #expect(model.canConnectSelectedPrinter == false)
+    #expect(model.connectKnownPrintersReadinessMessage == "Upload in progress.")
+    #expect(model.canConnectKnownPrinters == false)
+    #expect(model.selectedPrinterStatusRefreshReadinessMessage == "Upload in progress.")
+    #expect(model.canRefreshSelectedPrinterStatus == false)
+    #expect(model.refreshKnownPrinterStatusesReadinessMessage == "Upload in progress.")
+    #expect(model.canRefreshKnownPrinterStatuses == false)
+    #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == "Upload in progress.")
+    #expect(model.canSendSelectedPrinterJobCommand(.pause) == false)
 }
 
 @MainActor
