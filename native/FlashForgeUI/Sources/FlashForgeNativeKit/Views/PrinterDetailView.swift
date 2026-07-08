@@ -961,8 +961,27 @@ private struct TemperatureTelemetryTile: View {
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
             .chartLegend(.hidden)
+            .chartYScale(domain: 0...chartMaximumTemperature)
         } else {
             Color.clear
         }
+    }
+
+    private var chartMaximumTemperature: Double {
+        let normalizedID = item.id.lowercased()
+        let normalizedTitle = item.title.lowercased()
+
+        if normalizedID == "bed" || normalizedTitle.contains("bed") {
+            return 150
+        }
+
+        if normalizedID.contains("chamber")
+            || normalizedID.contains("enclosure")
+            || normalizedTitle.contains("chamber")
+            || normalizedTitle.contains("enclosure") {
+            return 60
+        }
+
+        return 300
     }
 }
