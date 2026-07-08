@@ -1,6 +1,9 @@
 import SwiftUI
 
 public struct ContentView: View {
+    #if os(macOS)
+    @Environment(\.openSettings) private var openSettings
+    #endif
     @AppStorage("discoverOnLaunch") private var discoverOnLaunch = true
     @State private var showsSettings = false
     @Binding private var showsAddPrinter: Bool
@@ -16,13 +19,13 @@ public struct ContentView: View {
             SidebarView(model: model) {
                 showsAddPrinter = true
             } onShowSettings: {
-                showsSettings = true
+                showSettings()
             }
         } detail: {
             DetailView(model: model) {
                 showsAddPrinter = true
             } onShowSettings: {
-                showsSettings = true
+                showSettings()
             }
         }
         .task {
@@ -37,6 +40,14 @@ public struct ContentView: View {
         .onOpenURL { fileURL in
             model.openJobFile(fileURL)
         }
+    }
+
+    private func showSettings() {
+        #if os(macOS)
+        openSettings()
+        #else
+        showsSettings = true
+        #endif
     }
 }
 
