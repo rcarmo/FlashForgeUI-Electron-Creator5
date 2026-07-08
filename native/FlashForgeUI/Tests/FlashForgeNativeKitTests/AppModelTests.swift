@@ -2296,7 +2296,9 @@ import Testing
 
     model.selectUploadFile(URL(fileURLWithPath: "/tmp/notes.txt"))
 
+    #expect(model.selectedUploadFileURL == nil)
     #expect(model.recentUploadFileURLs.isEmpty)
+    #expect(model.connectionMessage == "Choose a .gcode, .gx, or .3mf file.")
 }
 
 @MainActor
@@ -2507,13 +2509,15 @@ import Testing
     model.checkCode = "123456"
     model.selectUploadFile(URL(fileURLWithPath: "/tmp/notes.txt"))
 
-    #expect(model.selectedUploadReadinessMessage == "Choose a .gcode, .gx, or .3mf file.")
+    #expect(model.selectedUploadFileURL == nil)
+    #expect(model.connectionMessage == "Choose a .gcode, .gx, or .3mf file.")
+    #expect(model.selectedUploadReadinessMessage == "Choose a job file first.")
     #expect(model.canUploadSelectedJob == false)
 
     await model.uploadSelectedJob()
 
     #expect(uploadClient.lastRequest == nil)
-    #expect(model.connectionMessage == "Choose a .gcode, .gx, or .3mf file.")
+    #expect(model.connectionMessage == "Choose a job file first.")
 }
 
 private struct FakeBootstrapClient: PrinterBootstrapClient {

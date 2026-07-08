@@ -700,6 +700,11 @@ public final class AppModel {
             return
         }
 
+        guard isSupportedUploadFile(fileURL) else {
+            connectionMessage = "Choose a .gcode, .gx, or .3mf file."
+            return
+        }
+
         setSelectedUploadFile(fileURL)
     }
 
