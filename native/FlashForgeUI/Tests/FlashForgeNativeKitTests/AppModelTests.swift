@@ -1920,10 +1920,20 @@ import Testing
         nozzleTemperature: TemperatureReading(current: 31),
         bedTemperature: TemperatureReading(current: 29)
     )
+    let creator5ProPrinter = PrinterSnapshot(
+        name: "Creator 5 Pro",
+        model: "FlashForge Creator 5 Pro",
+        address: "192.168.1.46",
+        serialNumber: "SN-CREATOR5",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 32),
+        bedTemperature: TemperatureReading(current: 30)
+    )
     let model = AppModel(
         service: EmptyPrinterService(),
         bootstrapClient: FakeBootstrapClient(),
-        printers: [ad5xPrinter, proPrinter]
+        printers: [ad5xPrinter, proPrinter, creator5ProPrinter]
     )
 
     model.selection = .printer(ad5xPrinter.id)
@@ -1941,6 +1951,14 @@ import Testing
     #expect(model.selectedCameraStreamConfig.streamType == .mjpeg)
     #expect(model.selectedCameraStreamURL?.absoluteString == "http://192.168.1.45:8080/?action=stream")
     #expect(model.resolvedCameraState(for: proPrinter) == .available)
+
+    model.selection = .printer(creator5ProPrinter.id)
+
+    #expect(model.lastModernStatus == nil)
+    #expect(model.selectedCameraStreamConfig.sourceType == .intelligentFallback)
+    #expect(model.selectedCameraStreamConfig.streamType == .mjpeg)
+    #expect(model.selectedCameraStreamURL?.absoluteString == "http://192.168.1.46:8080/?action=stream")
+    #expect(model.resolvedCameraState(for: creator5ProPrinter) == .available)
 }
 
 @MainActor

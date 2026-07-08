@@ -2307,7 +2307,9 @@ public final class AppModel {
             .lowercased()
             .filter { $0.isLetter || $0.isNumber }
 
-        return normalizedModel.contains("ad5x") || normalizedModel.contains("5mpro")
+        return normalizedModel.contains("ad5x")
+            || normalizedModel.contains("5mpro")
+            || normalizedModel.contains("creator5pro")
     }
 
     private func jobCommandFailureMessage(for command: PrinterJobCommand, error: Error) -> String {
