@@ -16,10 +16,54 @@ public struct CameraStreamWebView: NSViewRepresentable {
     }
 
     public func updateNSView(_ webView: WKWebView, context: Context) {
-        guard webView.url != url else {
+        guard context.coordinator.url != url else {
             return
         }
-        webView.load(URLRequest(url: url))
+        context.coordinator.url = url
+        webView.loadHTMLString(Self.html(for: url), baseURL: url.deletingLastPathComponent())
+    }
+
+    public func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    public final class Coordinator {
+        var url: URL?
+    }
+
+    private static func html(for url: URL) -> String {
+        let escapedURL = url.absoluteString
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+
+        return """
+        <!doctype html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            html, body {
+              width: 100%;
+              height: 100%;
+              margin: 0;
+              background: transparent;
+              overflow: hidden;
+            }
+            img {
+              width: 100vw;
+              height: 100vh;
+              object-fit: contain;
+              display: block;
+            }
+          </style>
+        </head>
+        <body>
+          <img src="\(escapedURL)" alt="">
+        </body>
+        </html>
+        """
     }
 }
 #else
@@ -35,10 +79,54 @@ public struct CameraStreamWebView: UIViewRepresentable {
     }
 
     public func updateUIView(_ webView: WKWebView, context: Context) {
-        guard webView.url != url else {
+        guard context.coordinator.url != url else {
             return
         }
-        webView.load(URLRequest(url: url))
+        context.coordinator.url = url
+        webView.loadHTMLString(Self.html(for: url), baseURL: url.deletingLastPathComponent())
+    }
+
+    public func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    public final class Coordinator {
+        var url: URL?
+    }
+
+    private static func html(for url: URL) -> String {
+        let escapedURL = url.absoluteString
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+
+        return """
+        <!doctype html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            html, body {
+              width: 100%;
+              height: 100%;
+              margin: 0;
+              background: transparent;
+              overflow: hidden;
+            }
+            img {
+              width: 100vw;
+              height: 100vh;
+              object-fit: contain;
+              display: block;
+            }
+          </style>
+        </head>
+        <body>
+          <img src="\(escapedURL)" alt="">
+        </body>
+        </html>
+        """
     }
 }
 #endif

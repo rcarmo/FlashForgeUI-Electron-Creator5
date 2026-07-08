@@ -443,7 +443,7 @@ import Testing
                     name: "Saved Printer",
                     model: "Unknown",
                     address: "192.168.1.55",
-                    serialNumber: "SN-SAVED",
+                    serialNumber: "sn-saved",
                     commandPort: 8899,
                     eventPort: 8898,
                     protocolFormat: .modern,
@@ -475,6 +475,7 @@ import Testing
 
     #expect(model.selectedPrinter?.id == printerID)
     #expect(model.selectedPrinter?.name == "Fresh Printer")
+    #expect(model.selectedPrinter?.serialNumber == "SN-SAVED")
     #expect(model.checkCode == "654321")
     #expect(store.document.profiles.first?.id == printerID)
     #expect(store.document.profiles.first?.name == "Fresh Printer")

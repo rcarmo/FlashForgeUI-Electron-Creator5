@@ -1938,8 +1938,9 @@ public final class AppModel {
     }
 
     private func isSamePrinter(_ lhs: PrinterSnapshot, _ rhs: PrinterSnapshot) -> Bool {
-        if let leftSerial = lhs.serialNumber, let rightSerial = rhs.serialNumber,
-           !leftSerial.isEmpty, leftSerial == rightSerial {
+        if let leftSerial = normalizedSerialNumber(lhs.serialNumber),
+           let rightSerial = normalizedSerialNumber(rhs.serialNumber),
+           leftSerial == rightSerial {
             return true
         }
 
@@ -2036,7 +2037,7 @@ public final class AppModel {
 
     private func normalizedSerialNumber(_ serialNumber: String?) -> String? {
         let trimmedSerialNumber = serialNumber?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return trimmedSerialNumber.isEmpty ? nil : trimmedSerialNumber
+        return trimmedSerialNumber.isEmpty ? nil : trimmedSerialNumber.uppercased()
     }
 
     private func isSupportedUploadFile(_ fileURL: URL) -> Bool {
