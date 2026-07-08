@@ -596,6 +596,35 @@ import Testing
 }
 
 @MainActor
+@Test func invalidCustomCameraSettingsMakeResolvedCameraUnavailable() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        commandPort: 8899,
+        eventPort: 8898,
+        protocolFormat: .modern,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0),
+        cameraState: .available
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.customCameraEnabled = true
+    model.customCameraURL = "ftp://camera.local/live"
+
+    #expect(model.selectedCameraStreamConfig.sourceType == .custom)
+    #expect(model.selectedCameraStreamConfig.isAvailable == false)
+    #expect(model.resolvedCameraState(for: printer) == .unavailable)
+}
+
+@MainActor
 @Test func profileChangesAreLockedDuringUpload() async {
     let printer = PrinterSnapshot(
         name: "Desk Printer",

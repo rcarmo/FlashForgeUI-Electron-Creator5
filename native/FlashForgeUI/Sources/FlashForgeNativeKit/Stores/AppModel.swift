@@ -784,7 +784,7 @@ public final class AppModel {
     }
 
     public func resolvedCameraState(for printer: PrinterSnapshot) -> CameraState {
-        cameraStreamConfig(for: printer).isAvailable ? .available : printer.cameraState
+        cameraStreamConfig(for: printer).isAvailable ? .available : .unavailable
     }
 
     public var selectedCameraStreamURL: URL? {
