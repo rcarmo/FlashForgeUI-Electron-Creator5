@@ -2193,6 +2193,8 @@ import Testing
 
     await model.uploadSelectedJob()
 
+    #expect(model.selectedUploadFileURL == nil)
+    #expect(model.selectedUploadReadinessMessage == "Choose a job file first.")
     #expect(model.connectionMessage == "Choose the job file again.")
 }
 

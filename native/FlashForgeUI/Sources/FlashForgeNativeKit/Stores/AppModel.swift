@@ -890,6 +890,7 @@ public final class AppModel {
         }
 
         guard doesUploadFileExist(fileURL) else {
+            selectedUploadFileURL = nil
             connectionMessage = "Choose the job file again."
             return
         }
