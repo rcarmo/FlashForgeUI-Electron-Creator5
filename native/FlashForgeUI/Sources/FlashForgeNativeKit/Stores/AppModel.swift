@@ -1270,7 +1270,15 @@ public final class AppModel {
             lastUpdated = Date()
             connectionMessage = command.successMessage
         } catch {
-            connectionMessage = jobCommandFailureMessage(for: command, error: error)
+            let failureMessage = jobCommandFailureMessage(for: command, error: error)
+            if shouldRefreshStatus(afterJobCommandError: error) {
+                _ = await refreshStatus(
+                    for: printer,
+                    announcesProgress: false,
+                    reportsBackgroundFailure: false
+                )
+            }
+            connectionMessage = failureMessage
         }
     }
 
@@ -2005,6 +2013,19 @@ public final class AppModel {
             }
 
             return "Printer rejected \(command.rawValue): \(trimmedMessage)."
+        }
+    }
+
+    private func shouldRefreshStatus(afterJobCommandError error: Error) -> Bool {
+        guard let commandError = error as? ModernPrinterCommandError else {
+            return false
+        }
+
+        switch commandError {
+        case .httpStatus, .rejected, .invalidResponse:
+            return true
+        case .transportFailed:
+            return false
         }
     }
 

@@ -2024,6 +2024,42 @@ import Testing
 }
 
 @MainActor
+@Test func rejectedJobCommandRefreshesStalePrinterState() async {
+    let commandClient = FailingCommandClient(error: ModernPrinterCommandError.rejected("Printer is not printing"))
+    let modernClient = JobCommandRefreshModernClient(status: .ready, printFileName: "")
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .printing,
+        nozzleTemperature: TemperatureReading(current: 221),
+        bedTemperature: TemperatureReading(current: 58),
+        activeJob: PrintJobSnapshot(fileName: "benchy.3mf", progress: 0.4)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        modernClient: modernClient,
+        commandClient: commandClient,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+
+    await model.sendSelectedPrinterJobCommand(.pause)
+
+    #expect(modernClient.requestCount == 1)
+    #expect(modernClient.lastHost == "192.168.1.44")
+    #expect(modernClient.lastSerialNumber == "SN-TEST")
+    #expect(modernClient.lastCheckCode == "123456")
+    #expect(model.selectedPrinter?.status == .ready)
+    #expect(model.selectedPrinter?.activeJob == nil)
+    #expect(model.connectionMessage == "Printer rejected pause: Printer is not printing.")
+}
+
+@MainActor
 @Test func transportJobCommandFailureSuggestsNetworkCheck() async {
     let commandClient = FailingCommandClient(error: ModernPrinterCommandError.transportFailed)
     let printer = PrinterSnapshot(
@@ -2969,9 +3005,11 @@ private final class JobCommandRefreshModernClient: ModernPrinterHTTPClient, @unc
     var lastSerialNumber: String?
     var lastCheckCode: String?
     let status: ModernPrinterState
+    let printFileName: String
 
-    init(status: ModernPrinterState) {
+    init(status: ModernPrinterState, printFileName: String = "benchy.3mf") {
         self.status = status
+        self.printFileName = printFileName
     }
 
     func fetchStatus(host: String, port: UInt16, serialNumber: String, checkCode: String) async throws -> ModernPrinterStatus {
@@ -2992,7 +3030,7 @@ private final class JobCommandRefreshModernClient: ModernPrinterHTTPClient, @unc
             nozzleTarget: 220,
             bedCurrent: 55,
             bedTarget: 60,
-            printFileName: "benchy.3mf",
+            printFileName: printFileName,
             printProgress: 0.42,
             estimatedTime: 2400,
             printDuration: 900,
