@@ -1,6 +1,6 @@
 # Native FlashForgeUI Port Status
 
-Last reviewed: 2026-07-07
+Last reviewed: 2026-07-08
 
 This document tracks the native Swift port against the current beta target.
 It is intentionally evidence-based: a feature is marked implemented only when
@@ -60,7 +60,7 @@ allowed to go stale until the Mac beta goal is met.
 | Job file selection | Implemented | File importer, macOS open panel, document open, drag/drop, recent files | Validate Mac file-open and drag/drop flows with real use |
 | Job upload | Implemented for modern printers | `ModernPrinterUploadClient`, upload tests | Wider firmware and real-printer testing |
 | Print job controls | Implemented for modern printers | Pause, resume, cancel commands and tests | Wider firmware testing and richer state sync |
-| Camera stream resolution | Partial | `CameraStreamResolver`, `CameraPreviewView`, custom URL settings | Robust inline/open-stream behavior for local Mac use |
+| Camera stream resolution | Partial | `CameraStreamResolver`, `CameraPreviewView`, custom URL settings, and camera recovery actions with readiness reasons | Validate inline/open-stream behavior with real printers |
 | Material station display | Partial | `MaterialStationView`, modern status decoding | Validate local AD5X status display with real printers |
 | Settings | Basic implemented | `SettingsView` | Split/expand settings as feature surface grows |
 | Mac menus and shortcuts | Implemented for core flows | `FlashForgeUIApp.swift` command menus | Audit shortcut conflicts as features grow |
