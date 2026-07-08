@@ -8,6 +8,7 @@ public struct PrinterDetailView: View {
     @State private var showsCancelConfirmation = false
     @State private var showsUploadImporter = false
     @State private var isUploadDropTargeted = false
+    @State private var accessCodeInput = ""
     @Bindable private var model: AppModel
     private let printer: PrinterSnapshot
     private let onShowSettings: () -> Void
@@ -26,10 +27,17 @@ public struct PrinterDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 header
+                accessCodePrompt
                 detailGrid
             }
             .padding(28)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onAppear {
+            accessCodeInput = model.checkCode
+        }
+        .onChange(of: printer.id) {
+            accessCodeInput = model.checkCode
         }
         .confirmationDialog(
             "Cancel the current print?",
@@ -183,6 +191,77 @@ public struct PrinterDetailView: View {
         }
         .controlSize(.large)
         .disabled(!model.canConnectSelectedPrinter)
+    }
+
+    @ViewBuilder
+    private var accessCodePrompt: some View {
+        if let promptMessage = model.selectedPrinterAccessCodePromptMessage {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Access Code Required", systemImage: "key")
+                    .font(.title3.weight(.semibold))
+
+                Text(promptMessage)
+                    .foregroundStyle(.secondary)
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .center, spacing: 10) {
+                        accessCodeField
+                        accessCodeButtons
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        accessCodeField
+                        accessCodeButtons
+                    }
+                }
+            }
+            .padding(16)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    private var accessCodeField: some View {
+        SecureField("Printer access code", text: $accessCodeInput)
+            .textFieldStyle(.roundedBorder)
+            .frame(minWidth: 180)
+            .disabled(model.selectedPrinterProfileChangeReadinessMessage != nil)
+            .onSubmit {
+                Task { await saveAccessCode(refreshesStatus: true) }
+            }
+    }
+
+    private var accessCodeButtons: some View {
+        HStack(spacing: 8) {
+            Button {
+                Task { await saveAccessCode(refreshesStatus: false) }
+            } label: {
+                Label("Save", systemImage: "checkmark")
+            }
+
+            Button {
+                Task { await saveAccessCode(refreshesStatus: true) }
+            } label: {
+                Label("Save & Refresh", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .disabled(!canSubmitAccessCode)
+    }
+
+    private var canSubmitAccessCode: Bool {
+        !accessCodeInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && model.selectedPrinterProfileChangeReadinessMessage == nil
+    }
+
+    @MainActor
+    private func saveAccessCode(refreshesStatus: Bool) async {
+        guard model.saveSelectedPrinterAccessCode(accessCodeInput) else {
+            return
+        }
+
+        if refreshesStatus {
+            await model.refreshSelectedPrinterStatus()
+        }
     }
 
     @ViewBuilder
@@ -347,8 +426,7 @@ public struct PrinterDetailView: View {
 
     private func shouldOfferPrinterSettings(for message: String) -> Bool {
         let normalizedMessage = message.lowercased()
-        return normalizedMessage.contains("access code")
-            || normalizedMessage.contains("api port")
+        return normalizedMessage.contains("api port")
             || normalizedMessage.contains("printer address")
             || normalizedMessage.contains("serial number")
     }

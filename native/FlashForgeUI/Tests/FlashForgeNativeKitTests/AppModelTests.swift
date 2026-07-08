@@ -14,7 +14,16 @@ import Testing
 
     #expect(model.printers.count == 2)
     #expect(model.selectedPrinter?.name == "Creator 5 Studio")
+    #expect(model.selectedPrinterNeedsAccessCode == true)
+    #expect(model.selectedPrinterAccessCodePromptMessage == "Enter the printer access code for Creator 5 Studio to refresh status, upload jobs, and control prints.")
+    #expect(model.connectionMessage == "Found 2 printers. Enter the access code for Creator 5 Studio to refresh status.")
     #expect(model.activePrintCount == 1)
+
+    let didSave = model.saveSelectedPrinterAccessCode(" 123456 ")
+    #expect(didSave == true)
+    #expect(model.selectedPrinterNeedsAccessCode == false)
+    #expect(model.canRefreshSelectedPrinterStatus == true)
+    #expect(model.selectedPrinterStatusRefreshReadinessMessage == nil)
 }
 
 @MainActor
@@ -698,7 +707,7 @@ import Testing
     #expect(model.selectedPrinter?.protocolFormat == .modern)
     #expect(model.selectedPrinter?.status == .offline)
     #expect(model.connectionMessage == "Added Workshop. Connect to identify it.")
-    #expect(AppModel.manualPrinterCheckCodeHelpMessage == "Needed later for refresh, upload, and job controls. You can add it now or save it later.")
+    #expect(AppModel.manualPrinterCheckCodeHelpMessage == "Needed for refresh, upload, and job controls. Discovered printers will ask for it when they need it.")
     #expect(model.checkCode == "123456")
     #expect(store.document.profiles.count == 1)
     #expect(store.document.profiles.first?.checkCode == "123456")
@@ -1324,7 +1333,7 @@ import Testing
     model.selection = .printer(printer.id)
     model.connectionMessage = "Standing by."
 
-    #expect(model.selectedPrinterStatusRefreshReadinessMessage == "Enter the printer access code in Printer Settings to refresh status.")
+    #expect(model.selectedPrinterStatusRefreshReadinessMessage == "Enter the printer access code below to refresh status.")
     #expect(model.canRefreshSelectedPrinterStatus == false)
 
     let didRefresh = await model.refreshSelectedPrinterStatusInBackground()
@@ -2194,13 +2203,13 @@ import Testing
 
     #expect(model.hasSelectedPrinterCheckCode == false)
     #expect(model.selectedPrinterCheckCodeStatusMessage == "Needed for refresh, upload, and job controls.")
-    #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == "Enter the printer access code in Printer Settings to control this job.")
+    #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == "Enter the printer access code below to control this job.")
     #expect(model.canSendSelectedPrinterJobCommand(.pause) == false)
 
     await model.sendSelectedPrinterJobCommand(.pause)
 
     #expect(commandClient.lastCommand == nil)
-    #expect(model.connectionMessage == "Enter the printer access code in Printer Settings to control this job.")
+    #expect(model.connectionMessage == "Enter the printer access code below to control this job.")
 }
 
 @MainActor
@@ -2550,7 +2559,7 @@ import Testing
     #expect(model.canChangeSelectedUploadOptions == true)
     #expect(model.selectedUploadOptionChangeReadinessMessage == nil)
     #expect(model.canClearSelectedUploadFile == true)
-    #expect(model.selectedUploadReadinessMessage == "Enter the printer access code in Printer Settings to upload a job.")
+    #expect(model.selectedUploadReadinessMessage == "Enter the printer access code below to upload a job.")
     #expect(model.canUploadSelectedJob == false)
 
     model.levelingBeforePrint = false

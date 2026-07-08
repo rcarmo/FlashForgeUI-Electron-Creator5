@@ -57,19 +57,13 @@ public struct SettingsView: View {
     private var printerSettings: some View {
         Form {
             Section("Selected Printer") {
-                Picker("Printer", selection: $model.selection) {
-                    Text("Overview")
-                        .tag(AppSelection?.some(.dashboard))
-
-                    ForEach(model.printers) { printer in
-                        Text(printer.name)
-                            .tag(AppSelection?.some(.printer(printer.id)))
-                    }
-                }
-
                 if let printer = model.selectedPrinter {
+                    LabeledContent("Name", value: printer.name)
                     LabeledContent("Address", value: printer.address)
                     LabeledContent("Model", value: printer.model)
+                    if let serialNumber = printer.serialNumber, !serialNumber.isEmpty {
+                        LabeledContent("Serial", value: serialNumber)
+                    }
 
                     Button("Forget Selected Printer", role: .destructive) {
                         showsForgetPrinterConfirmation = true
@@ -85,11 +79,6 @@ public struct SettingsView: View {
                     Text("Select a printer to edit its profile.")
                         .foregroundStyle(.secondary)
                 }
-            }
-
-            Section("Add Printer") {
-                AddPrinterFormView(model: model, showsFinishButton: false)
-                    .frame(minHeight: 220)
             }
 
             if model.selectedPrinter != nil {

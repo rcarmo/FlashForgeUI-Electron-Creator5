@@ -6,7 +6,7 @@ import Observation
 public final class AppModel {
     nonisolated public static let supportedUploadFileExtensions = ["gcode", "gx", "3mf"]
     nonisolated public static let manualPrinterCheckCodeHelpMessage =
-        "Needed later for refresh, upload, and job controls. You can add it now or save it later."
+        "Needed for refresh, upload, and job controls. Discovered printers will ask for it when they need it."
 
     public var printers: [PrinterSnapshot]
     public var selection: AppSelection? {
@@ -209,6 +209,22 @@ public final class AppModel {
             : "Needed for refresh, upload, and job controls."
     }
 
+    public var selectedPrinterNeedsAccessCode: Bool {
+        guard let selectedPrinter else {
+            return false
+        }
+
+        return printerNeedsAccessCode(selectedPrinter)
+    }
+
+    public var selectedPrinterAccessCodePromptMessage: String? {
+        guard let selectedPrinter else {
+            return nil
+        }
+
+        return accessCodePromptMessage(for: selectedPrinter)
+    }
+
     public var canClearSelectedPrinterCheckCode: Bool {
         hasSelectedPrinterCheckCode && selectedPrinterProfileChangeReadinessMessage == nil
     }
@@ -223,6 +239,33 @@ public final class AppModel {
 
         checkCode = ""
         connectionMessage = "Printer access code cleared."
+    }
+
+    @discardableResult
+    public func saveSelectedPrinterAccessCode(_ accessCode: String) -> Bool {
+        guard let printer = selectedPrinter else {
+            connectionMessage = "Select a printer first."
+            return false
+        }
+
+        if let readinessMessage = selectedPrinterProfileChangeReadinessMessage {
+            connectionMessage = readinessMessage
+            return false
+        }
+
+        let trimmedAccessCode = accessCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedAccessCode.isEmpty else {
+            connectionMessage = "Enter the printer access code."
+            return false
+        }
+
+        checkCode = trimmedAccessCode
+        statusFailureMessagesByPrinterID.removeValue(forKey: printer.id)
+        if printer.serialNumber?.isEmpty == false {
+            identificationFailureMessagesByPrinterID.removeValue(forKey: printer.id)
+        }
+        connectionMessage = "Access code saved for \(printer.name)."
+        return true
     }
 
     public var activePrintCount: Int {
@@ -299,6 +342,10 @@ public final class AppModel {
             return failureSummary
         }
 
+        if printerNeedsAccessCode(printer) {
+            return "Needs printer access code."
+        }
+
         switch printer.status {
         case .needsAttention:
             return "Printer reported an error."
@@ -312,6 +359,10 @@ public final class AppModel {
     public func printJobIdleSummary(for printer: PrinterSnapshot) -> String {
         if statusFailureSummary(for: printer) != nil {
             return "Status unavailable."
+        }
+
+        if printerNeedsAccessCode(printer) {
+            return "Enter access code to load printer status."
         }
 
         switch printer.status {
@@ -331,7 +382,23 @@ public final class AppModel {
     }
 
     public func printerNeedsUserAttention(_ printer: PrinterSnapshot) -> Bool {
-        statusFailureSummary(for: printer) != nil || printer.status.isActionable
+        statusFailureSummary(for: printer) != nil || printerNeedsAccessCode(printer) || printer.status.isActionable
+    }
+
+    public func printerNeedsAccessCode(_ printer: PrinterSnapshot) -> Bool {
+        guard printer.serialNumber?.isEmpty == false else {
+            return false
+        }
+
+        return storedCheckCode(for: printer.id) == nil
+    }
+
+    public func accessCodePromptMessage(for printer: PrinterSnapshot) -> String? {
+        guard printerNeedsAccessCode(printer) else {
+            return nil
+        }
+
+        return "Enter the printer access code for \(printer.name) to refresh status, upload jobs, and control prints."
     }
 
     public func temperatureTelemetryItems(for printer: PrinterSnapshot) -> [TemperatureTelemetryItem] {
@@ -368,7 +435,12 @@ public final class AppModel {
     }
 
     public func statusFailureSummary(for printer: PrinterSnapshot) -> String? {
-        identificationFailureMessagesByPrinterID[printer.id] ?? statusFailureMessagesByPrinterID[printer.id]
+        if let identificationFailure = identificationFailureMessagesByPrinterID[printer.id],
+           printer.serialNumber?.isEmpty != false {
+            return identificationFailure
+        }
+
+        return statusFailureMessagesByPrinterID[printer.id]
     }
 
     public var availableJobCommands: Set<PrinterJobCommand> {
@@ -486,7 +558,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Enter the printer access code in Printer Settings to control this job."
+            return "Enter the printer access code below to control this job."
         }
 
         return nil
@@ -542,7 +614,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Enter the printer access code in Printer Settings to upload a job."
+            return "Enter the printer access code below to upload a job."
         }
 
         guard doesUploadFileExist(fileURL) else {
@@ -609,6 +681,10 @@ public final class AppModel {
             return "Select a printer first."
         }
 
+        if let printer = selectedPrinter, printerNeedsAccessCode(printer) {
+            return "Enter the printer access code below to connect."
+        }
+
         return nil
     }
 
@@ -654,7 +730,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Enter the printer access code in Printer Settings to refresh status."
+            return "Enter the printer access code below to refresh status."
         }
 
         return nil
@@ -738,6 +814,10 @@ public final class AppModel {
         }
 
         guard refreshablePrinterCount > 0 else {
+            if printers.contains(where: printerNeedsAccessCode) {
+                return "Enter printer access codes for discovered printers before refreshing statuses."
+            }
+
             return "Identify printers and save printer access codes before refreshing statuses."
         }
 
@@ -1254,7 +1334,7 @@ public final class AppModel {
 
         let trimmedCheckCode = checkCode.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedCheckCode.isEmpty else {
-            connectionMessage = "Enter the printer access code in Printer Settings to upload a job."
+            connectionMessage = "Enter the printer access code below to upload a job."
             return
         }
 
@@ -1383,14 +1463,22 @@ public final class AppModel {
 
             let previousCount = printers.count
             printers = mergedPrinters(with: discoveredPrinters)
-            if selectedPrinter == nil {
+            let accessCodePrinter = firstPrinterNeedingAccessCode(in: printers)
+            if let accessCodePrinter {
+                selection = .printer(accessCodePrinter.id)
+            } else if selectedPrinter == nil {
                 selection = .printer(printers[0].id)
             }
-            connectionMessage = discoverySummary(
+            let summary = discoverySummary(
                 discoveredCount: discoveredPrinters.count,
                 previousCount: previousCount,
                 mergedCount: printers.count
             )
+            if let accessCodePrinter {
+                connectionMessage = "\(summary) Enter the access code for \(accessCodePrinter.name) to refresh status."
+            } else {
+                connectionMessage = summary
+            }
             saveProfiles()
         } catch {
             if printers.isEmpty {
@@ -1428,6 +1516,13 @@ public final class AppModel {
                     reportsBackgroundFailure: false
                 )
             }
+        } else if printer.serialNumber?.isEmpty == false,
+                  storedCheckCode(for: printer.id) != nil {
+            _ = await refreshStatus(
+                for: printer,
+                announcesProgress: true,
+                reportsBackgroundFailure: false
+            )
         } else {
             connectionMessage = printerIdentificationFailureMessage(for: printer)
         }
@@ -1473,7 +1568,11 @@ public final class AppModel {
             }
             return true
         } catch {
-            identificationFailureMessagesByPrinterID[printer.id] = printerIdentificationFailureSummary(for: printer)
+            if printer.serialNumber?.isEmpty == false {
+                identificationFailureMessagesByPrinterID.removeValue(forKey: printer.id)
+            } else {
+                identificationFailureMessagesByPrinterID[printer.id] = printerIdentificationFailureSummary(for: printer)
+            }
             return false
         }
     }
@@ -1573,7 +1672,7 @@ public final class AppModel {
 
         guard let trimmedCheckCode = storedCheckCode(for: printer.id) else {
             if announcesProgress {
-                connectionMessage = "Enter the printer access code in Printer Settings to refresh status."
+                connectionMessage = "Enter the printer access code below to refresh status."
             }
             return false
         }
@@ -1757,6 +1856,16 @@ public final class AppModel {
         }
 
         return mergedPrinters
+    }
+
+    private func firstPrinterNeedingAccessCode(in printers: [PrinterSnapshot]) -> PrinterSnapshot? {
+        printers.first { printer in
+            guard printer.serialNumber?.isEmpty == false else {
+                return false
+            }
+
+            return storedCheckCode(for: printer.id) == nil
+        }
     }
 
     private func isSamePrinter(_ lhs: PrinterSnapshot, _ rhs: PrinterSnapshot) -> Bool {
