@@ -89,40 +89,18 @@ public struct PrinterDetailView: View {
     }
 
     private var detailGrid: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 20) {
-                leftGridColumn
-                    .frame(minWidth: 360, idealWidth: 440, maxWidth: 520, alignment: .topLeading)
-
-                rightGridColumn
-                    .frame(minWidth: 360, maxWidth: .infinity, alignment: .topLeading)
-            }
-
-            VStack(alignment: .leading, spacing: 20) {
-                cameraSection
-                controlsSection
-                telemetrySection
-                jobSection
-                materialStationSection
-            }
-        }
-    }
-
-    private var leftGridColumn: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        DashboardMasonryLayout(minimumColumnWidth: 340, maximumColumnCount: 3, spacing: 20) {
             cameraSection
-            controlsSection
-        }
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-    }
+                .layoutValue(key: DashboardColumnPreferenceKey.self, value: 0)
 
-    private var rightGridColumn: some View {
-        VStack(alignment: .leading, spacing: 20) {
             telemetrySection
+
+            controlsSection
+                .layoutValue(key: DashboardColumnPreferenceKey.self, value: 0)
+
             jobSection
             materialStationSection
         }
-        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private var cameraSection: some View {
@@ -693,6 +671,101 @@ private struct TelemetryItem: Identifiable {
     var id: String { title }
     let title: String
     let value: String
+}
+
+private struct DashboardColumnPreferenceKey: LayoutValueKey {
+    static let defaultValue: Int? = nil
+}
+
+private struct DashboardMasonryLayout: Layout {
+    let minimumColumnWidth: CGFloat
+    let maximumColumnCount: Int
+    let spacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let availableWidth = proposal.width ?? minimumColumnWidth
+        let columnCount = columnCount(for: availableWidth)
+        let columnWidth = widthPerColumn(for: availableWidth, columnCount: columnCount)
+        var columnHeights = Array(repeating: CGFloat.zero, count: columnCount)
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil))
+            guard size.width > 0 || size.height > 0 else {
+                continue
+            }
+
+            let columnIndex = targetColumn(for: subview, in: columnHeights)
+            if columnHeights[columnIndex] > 0 {
+                columnHeights[columnIndex] += spacing
+            }
+            columnHeights[columnIndex] += size.height
+        }
+
+        return CGSize(width: availableWidth, height: columnHeights.max() ?? 0)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        let columnCount = columnCount(for: bounds.width)
+        let columnWidth = widthPerColumn(for: bounds.width, columnCount: columnCount)
+        var columnHeights = Array(repeating: CGFloat.zero, count: columnCount)
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil))
+            guard size.width > 0 || size.height > 0 else {
+                continue
+            }
+
+            let columnIndex = targetColumn(for: subview, in: columnHeights)
+            if columnHeights[columnIndex] > 0 {
+                columnHeights[columnIndex] += spacing
+            }
+
+            let origin = CGPoint(
+                x: bounds.minX + CGFloat(columnIndex) * (columnWidth + spacing),
+                y: bounds.minY + columnHeights[columnIndex]
+            )
+            subview.place(
+                at: origin,
+                anchor: .topLeading,
+                proposal: ProposedViewSize(width: columnWidth, height: nil)
+            )
+            columnHeights[columnIndex] += size.height
+        }
+    }
+
+    private func columnCount(for width: CGFloat) -> Int {
+        guard width > 0 else {
+            return 1
+        }
+
+        let possibleColumns = Int((width + spacing) / (minimumColumnWidth + spacing))
+        return min(maximumColumnCount, max(1, possibleColumns))
+    }
+
+    private func widthPerColumn(for width: CGFloat, columnCount: Int) -> CGFloat {
+        let totalSpacing = CGFloat(max(0, columnCount - 1)) * spacing
+        return max(0, (width - totalSpacing) / CGFloat(columnCount))
+    }
+
+    private func targetColumn(for subview: LayoutSubviews.Element, in heights: [CGFloat]) -> Int {
+        if let preferredColumn = subview[DashboardColumnPreferenceKey.self],
+           heights.indices.contains(preferredColumn) {
+            return preferredColumn
+        }
+
+        return heights.indices.min { lhs, rhs in
+            heights[lhs] < heights[rhs]
+        } ?? 0
+    }
 }
 
 private struct TelemetryTile: View {
