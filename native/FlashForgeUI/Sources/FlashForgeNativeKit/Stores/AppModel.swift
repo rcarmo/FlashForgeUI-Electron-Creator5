@@ -1195,6 +1195,10 @@ public final class AppModel {
             return
         }
 
+        let shouldStartAfterUpload = startPrintAfterUpload
+        let shouldLevelBeforePrint = shouldStartAfterUpload && levelingBeforePrint
+        let uploadFirmwareVersion = lastModernStatus?.firmwareVersion ?? lastPrinterInfo?.firmwareVersion
+
         isUploadingJob = true
         connectionMessage = "Uploading \(fileURL.lastPathComponent)..."
         defer { isUploadingJob = false }
@@ -1210,17 +1214,17 @@ public final class AppModel {
             try await uploadClient.upload(
                 PrinterUploadRequest(
                     fileURL: fileURL,
-                    startPrint: startPrintAfterUpload,
-                    levelingBeforePrint: startPrintAfterUpload && levelingBeforePrint,
-                    firmwareVersion: lastModernStatus?.firmwareVersion ?? lastPrinterInfo?.firmwareVersion
+                    startPrint: shouldStartAfterUpload,
+                    levelingBeforePrint: shouldLevelBeforePrint,
+                    firmwareVersion: uploadFirmwareVersion
                 ),
                 host: printer.address,
                 port: UInt16(printer.eventPort ?? 8898),
                 serialNumber: serialNumber,
                 checkCode: trimmedCheckCode
             )
-            applyUploadSuccess(fileURL: fileURL, printerID: printer.id)
-            if startPrintAfterUpload {
+            applyUploadSuccess(fileURL: fileURL, printerID: printer.id, startsPrint: shouldStartAfterUpload)
+            if shouldStartAfterUpload {
                 _ = await refreshStatus(
                     for: printer,
                     announcesProgress: false,
@@ -1228,7 +1232,7 @@ public final class AppModel {
                 )
             }
             lastUpdated = Date()
-            connectionMessage = startPrintAfterUpload ? "Uploaded and started \(fileURL.lastPathComponent)." : "Uploaded \(fileURL.lastPathComponent)."
+            connectionMessage = shouldStartAfterUpload ? "Uploaded and started \(fileURL.lastPathComponent)." : "Uploaded \(fileURL.lastPathComponent)."
         } catch {
             connectionMessage = uploadFailureMessage(for: error)
         }
@@ -2084,8 +2088,8 @@ public final class AppModel {
         }
     }
 
-    private func applyUploadSuccess(fileURL: URL, printerID: UUID) {
-        guard startPrintAfterUpload,
+    private func applyUploadSuccess(fileURL: URL, printerID: UUID, startsPrint: Bool) {
+        guard startsPrint,
               let index = printers.firstIndex(where: { $0.id == printerID }) else {
             return
         }
