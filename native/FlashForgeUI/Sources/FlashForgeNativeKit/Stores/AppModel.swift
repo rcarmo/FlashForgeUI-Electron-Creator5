@@ -129,6 +129,7 @@ public final class AppModel {
     private let uploadClient: ModernPrinterUploadClient
     private let profileStore: PrinterProfileStore?
     private var checkCodesByPrinterID: [UUID: String]
+    private var checkCodesByPrinterSerialNumber: [String: String]
     private var cameraConfigsByPrinterID: [UUID: CameraUserConfig]
     private var printerInfoByPrinterID: [UUID: PrinterInfo]
     private var modernStatusesByPrinterID: [UUID: ModernPrinterStatus]
@@ -175,6 +176,7 @@ public final class AppModel {
         self.customCameraURL = ""
         self.checkCode = ""
         self.checkCodesByPrinterID = [:]
+        self.checkCodesByPrinterSerialNumber = [:]
         self.cameraConfigsByPrinterID = [:]
         self.printerInfoByPrinterID = [:]
         self.modernStatusesByPrinterID = [:]
@@ -206,7 +208,7 @@ public final class AppModel {
             return false
         }
 
-        return storedCheckCode(for: printer.id) != nil
+        return storedCheckCode(for: printer) != nil
     }
 
     public var selectedPrinterCheckCodeStatusMessage: String? {
@@ -400,7 +402,7 @@ public final class AppModel {
             return false
         }
 
-        return storedCheckCode(for: printer.id) == nil
+        return storedCheckCode(for: printer) == nil
     }
 
     public func accessCodePromptMessage(for printer: PrinterSnapshot) -> String? {
@@ -567,7 +569,7 @@ public final class AppModel {
             return "This printer did not report a serial number."
         }
 
-        guard storedCheckCode(for: printer.id) != nil else {
+        guard storedCheckCode(for: printer) != nil else {
             return "Enter the Device ID below to control this job."
         }
 
@@ -623,7 +625,7 @@ public final class AppModel {
             return "This printer did not report a serial number."
         }
 
-        guard storedCheckCode(for: printer.id) != nil else {
+        guard storedCheckCode(for: printer) != nil else {
             return "Enter the Device ID below to upload a job."
         }
 
@@ -647,7 +649,7 @@ public final class AppModel {
             return "Identify printer first."
         }
 
-        guard storedCheckCode(for: printer.id) != nil else {
+        guard storedCheckCode(for: printer) != nil else {
             return "Needs Device ID."
         }
 
@@ -757,7 +759,7 @@ public final class AppModel {
             return "This printer did not report a serial number."
         }
 
-        guard storedCheckCode(for: printer.id) != nil else {
+        guard storedCheckCode(for: printer) != nil else {
             return "Enter the Device ID below to refresh status."
         }
 
@@ -1301,7 +1303,7 @@ public final class AppModel {
 
         printers.append(printer)
         if !trimmedCheckCode.isEmpty {
-            checkCodesByPrinterID[printer.id] = trimmedCheckCode
+            storeCheckCode(trimmedCheckCode, for: printer)
         }
         selection = .printer(printer.id)
         connectionMessage = "Added \(displayName). Connect to identify it."
@@ -1342,7 +1344,7 @@ public final class AppModel {
             selection = .dashboard
         }
 
-        checkCodesByPrinterID.removeValue(forKey: removedPrinterID)
+        removeStoredCheckCode(for: printer)
         cameraConfigsByPrinterID.removeValue(forKey: removedPrinterID)
         printerInfoByPrinterID.removeValue(forKey: removedPrinterID)
         modernStatusesByPrinterID.removeValue(forKey: removedPrinterID)
@@ -1441,7 +1443,7 @@ public final class AppModel {
 
         guard let printer = selectedPrinter,
               let serialNumber = printer.serialNumber,
-              let trimmedCheckCode = storedCheckCode(for: printer.id) else {
+              let trimmedCheckCode = storedCheckCode(for: printer) else {
             return
         }
 
@@ -1562,7 +1564,7 @@ public final class AppModel {
                 )
             }
         } else if printer.serialNumber?.isEmpty == false,
-                  storedCheckCode(for: printer.id) != nil {
+                  storedCheckCode(for: printer) != nil {
             _ = await refreshStatus(
                 for: printer,
                 announcesProgress: true,
@@ -1715,7 +1717,7 @@ public final class AppModel {
             return false
         }
 
-        guard let trimmedCheckCode = storedCheckCode(for: printer.id) else {
+        guard let trimmedCheckCode = storedCheckCode(for: printer) else {
             if announcesProgress {
                 connectionMessage = "Enter the Device ID below to refresh status."
             }
@@ -1761,14 +1763,20 @@ public final class AppModel {
 
         do {
             let document = try profileStore.loadDocument()
-            checkCodesByPrinterID = Dictionary(
-                uniqueKeysWithValues: document.profiles.compactMap { profile in
-                    guard let code = profile.checkCode, !code.isEmpty else {
-                        return nil
-                    }
-                    return (profile.id, code)
+            checkCodesByPrinterID = [:]
+            checkCodesByPrinterSerialNumber = [:]
+            for profile in document.profiles {
+                guard let code = profile.checkCode?.trimmingCharacters(in: .whitespacesAndNewlines),
+                      !code.isEmpty else {
+                    continue
                 }
-            )
+
+                if let serialKey = normalizedSerialNumber(profile.serialNumber) {
+                    checkCodesByPrinterSerialNumber[serialKey] = code
+                } else {
+                    checkCodesByPrinterID[profile.id] = code
+                }
+            }
             cameraConfigsByPrinterID = Dictionary(
                 uniqueKeysWithValues: document.profiles.compactMap { profile in
                     guard let config = profile.cameraUserConfig else {
@@ -1823,7 +1831,7 @@ public final class AppModel {
             .map { printer in
                 PrinterProfile(
                     snapshot: printer,
-                    checkCode: checkCodesByPrinterID[printer.id],
+                    checkCode: storedCheckCode(for: printer),
                     cameraUserConfig: cameraConfigsByPrinterID[printer.id],
                     recentUploadFileURLs: recentUploadFileURLsByPrinterID[printer.id] ?? []
                 )
@@ -1844,9 +1852,17 @@ public final class AppModel {
 
         let trimmedCode = checkCode.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedCode.isEmpty {
-            checkCodesByPrinterID.removeValue(forKey: id)
+            if let printer = printers.first(where: { $0.id == id }) {
+                removeStoredCheckCode(for: printer)
+            } else {
+                checkCodesByPrinterID.removeValue(forKey: id)
+            }
         } else {
-            checkCodesByPrinterID[id] = trimmedCode
+            if let printer = printers.first(where: { $0.id == id }) {
+                storeCheckCode(trimmedCode, for: printer)
+            } else {
+                checkCodesByPrinterID[id] = trimmedCode
+            }
         }
 
         let trimmedCameraURL = customCameraURL.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1873,7 +1889,11 @@ public final class AppModel {
             return
         }
 
-        checkCode = checkCodesByPrinterID[id] ?? ""
+        if let printer = printers.first(where: { $0.id == id }) {
+            checkCode = storedCheckCode(for: printer) ?? ""
+        } else {
+            checkCode = storedCheckCode(for: id) ?? ""
+        }
         let config = cameraConfigsByPrinterID[id] ?? CameraUserConfig()
         cameraEnabled = config.cameraEnabled
         customCameraEnabled = config.customCameraEnabled
@@ -1890,6 +1910,7 @@ public final class AppModel {
             if let storedPrinter = storedPrinters.first(where: { isSamePrinter($0, discoveredPrinter) }) {
                 printer.id = storedPrinter.id
                 matchedStoredPrinterIDs.insert(storedPrinter.id)
+                migrateStoredCheckCodeToSerialNumber(for: printer)
             }
 
             if !mergedPrinters.contains(where: { isSamePrinter($0, printer) }) {
@@ -1912,7 +1933,7 @@ public final class AppModel {
                 return false
             }
 
-            return storedCheckCode(for: printer.id) == nil
+            return storedCheckCode(for: printer) == nil
         }
     }
 
@@ -1938,7 +1959,7 @@ public final class AppModel {
             return false
         }
 
-        return storedCheckCode(for: printer.id) != nil
+        return storedCheckCode(for: printer) != nil
     }
 
     private func overviewPriority(for printer: PrinterSnapshot) -> Int {
@@ -1963,6 +1984,59 @@ public final class AppModel {
     private func storedCheckCode(for printerID: UUID) -> String? {
         let trimmedCode = checkCodesByPrinterID[printerID]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmedCode.isEmpty ? nil : trimmedCode
+    }
+
+    private func storedCheckCode(for printer: PrinterSnapshot) -> String? {
+        if let serialKey = normalizedSerialNumber(printer.serialNumber),
+           let code = storedCheckCode(forSerialNumber: serialKey) {
+            return code
+        }
+
+        return storedCheckCode(for: printer.id)
+    }
+
+    private func storedCheckCode(forSerialNumber serialNumber: String) -> String? {
+        let trimmedCode = checkCodesByPrinterSerialNumber[serialNumber]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmedCode.isEmpty ? nil : trimmedCode
+    }
+
+    private func storeCheckCode(_ code: String, for printer: PrinterSnapshot) {
+        let trimmedCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedCode.isEmpty else {
+            removeStoredCheckCode(for: printer)
+            return
+        }
+
+        if let serialKey = normalizedSerialNumber(printer.serialNumber) {
+            checkCodesByPrinterSerialNumber[serialKey] = trimmedCode
+            checkCodesByPrinterID.removeValue(forKey: printer.id)
+        } else {
+            checkCodesByPrinterID[printer.id] = trimmedCode
+        }
+    }
+
+    private func removeStoredCheckCode(for printer: PrinterSnapshot) {
+        checkCodesByPrinterID.removeValue(forKey: printer.id)
+        if let serialKey = normalizedSerialNumber(printer.serialNumber) {
+            checkCodesByPrinterSerialNumber.removeValue(forKey: serialKey)
+        }
+    }
+
+    private func migrateStoredCheckCodeToSerialNumber(for printer: PrinterSnapshot) {
+        guard let serialKey = normalizedSerialNumber(printer.serialNumber),
+              let code = storedCheckCode(for: printer.id) else {
+            return
+        }
+
+        if storedCheckCode(forSerialNumber: serialKey) == nil {
+            checkCodesByPrinterSerialNumber[serialKey] = code
+        }
+        checkCodesByPrinterID.removeValue(forKey: printer.id)
+    }
+
+    private func normalizedSerialNumber(_ serialNumber: String?) -> String? {
+        let trimmedSerialNumber = serialNumber?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmedSerialNumber.isEmpty ? nil : trimmedSerialNumber
     }
 
     private func isSupportedUploadFile(_ fileURL: URL) -> Bool {
@@ -2289,6 +2363,7 @@ public final class AppModel {
         }
         if !info.serialNumber.isEmpty {
             printers[index].serialNumber = info.serialNumber
+            migrateStoredCheckCodeToSerialNumber(for: printers[index])
         }
     }
 

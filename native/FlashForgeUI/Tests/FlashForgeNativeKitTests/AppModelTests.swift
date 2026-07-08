@@ -208,6 +208,44 @@ import Testing
 }
 
 @MainActor
+@Test func savedProfileDeviceIDFollowsPrinterSerialNumber() async {
+    let savedID = UUID()
+    let replacementID = UUID()
+    let store = RecordingProfileStore(
+        document: PrinterProfileDocument(
+            profiles: [
+                PrinterProfile(
+                    id: savedID,
+                    name: "Saved Printer",
+                    model: "Adventurer 5M Pro",
+                    address: "192.168.1.55",
+                    serialNumber: "SN-SAVED",
+                    commandPort: 8899,
+                    eventPort: 8898,
+                    protocolFormat: .modern,
+                    checkCode: "654321"
+                )
+            ],
+            selectedPrinterID: savedID
+        )
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store
+    )
+
+    model.printers[0].id = replacementID
+    model.selection = .printer(replacementID)
+
+    #expect(model.checkCode == "654321")
+    #expect(model.hasSelectedPrinterCheckCode == true)
+    #expect(store.document.profiles.first?.id == replacementID)
+    #expect(store.document.profiles.first?.serialNumber == "SN-SAVED")
+    #expect(store.document.profiles.first?.checkCode == "654321")
+}
+
+@MainActor
 @Test func overviewPrintersPrioritizeAttentionAndActiveJobs() async {
     let readyPrinter = PrinterSnapshot(
         name: "Ready A",
@@ -1122,6 +1160,44 @@ import Testing
     #expect(model.lastPrinterInfo?.serialNumber == "SN-SECOND")
     #expect(model.connectionMessage == "Identified 2 printers.")
     #expect(model.isConnectingKnownPrinters == false)
+}
+
+@MainActor
+@Test func manualPrinterDeviceIDMovesToSerialNumberWhenIdentified() async {
+    let bootstrapClient = RecordingBootstrapClient(
+        infosByHost: [
+            "192.168.1.77": PrinterInfo(
+                typeName: "FlashForge Creator 5 Pro",
+                name: "Creator 5 Pro",
+                firmwareVersion: "3.2.0",
+                serialNumber: "SN-CREATOR5"
+            )
+        ]
+    )
+    let store = RecordingProfileStore()
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: bootstrapClient,
+        profileStore: store
+    )
+
+    model.addManualPrinter(
+        name: "Workshop",
+        address: "192.168.1.77",
+        checkCode: "123456"
+    )
+    let originalID = model.selectedPrinter?.id
+
+    let identifiedCount = await model.connectKnownPrinters()
+
+    #expect(identifiedCount == 1)
+    #expect(model.selectedPrinter?.id == originalID)
+    #expect(model.selectedPrinter?.serialNumber == "SN-CREATOR5")
+    #expect(model.checkCode == "123456")
+    #expect(model.hasSelectedPrinterCheckCode == true)
+    #expect(store.document.profiles.first?.id == originalID)
+    #expect(store.document.profiles.first?.serialNumber == "SN-CREATOR5")
+    #expect(store.document.profiles.first?.checkCode == "123456")
 }
 
 @MainActor
