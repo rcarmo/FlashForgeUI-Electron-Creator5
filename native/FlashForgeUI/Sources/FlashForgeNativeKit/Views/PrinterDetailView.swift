@@ -122,6 +122,11 @@ public struct PrinterDetailView: View {
             Text(printer.status.rawValue)
                 .font(.headline)
                 .foregroundStyle(printer.status.isActionable ? .orange : .primary)
+            if let activityMessage = model.selectedPrinterActivityMessage {
+                Label(activityMessage, systemImage: activitySymbol(for: activityMessage))
+                    .font(.callout)
+                    .foregroundStyle(isWarningActivity(activityMessage) ? .orange : .secondary)
+            }
             if let identitySummary = model.selectedPrinterIdentitySummary {
                 Label(identitySummary, systemImage: printer.serialNumber?.isEmpty == false ? "number" : "info.circle")
                     .font(.callout)
@@ -493,6 +498,19 @@ public struct PrinterDetailView: View {
 
     private var uploadDropPrompt: String {
         isUploadDropTargeted ? "Release job file" : "No file selected"
+    }
+
+    private func activitySymbol(for message: String) -> String {
+        isWarningActivity(message) ? "exclamationmark.triangle" : "info.circle"
+    }
+
+    private func isWarningActivity(_ message: String) -> Bool {
+        let normalizedMessage = message.lowercased()
+        return normalizedMessage.contains("failed")
+            || normalizedMessage.hasPrefix("could not")
+            || normalizedMessage.contains("rejected")
+            || normalizedMessage.contains("invalid")
+            || normalizedMessage.contains("missing")
     }
 
     private var telemetrySection: some View {

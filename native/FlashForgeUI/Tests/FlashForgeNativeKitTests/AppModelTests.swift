@@ -282,6 +282,32 @@ import Testing
 }
 
 @MainActor
+@Test func selectedPrinterActivityMessageFollowsCurrentOperationMessage() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+
+    model.connectionMessage = "  Upload failed. Check that the printer is online.  "
+    #expect(model.selectedPrinterActivityMessage == nil)
+
+    model.selection = .printer(printer.id)
+    #expect(model.selectedPrinterActivityMessage == "Upload failed. Check that the printer is online.")
+
+    model.connectionMessage = "  "
+    #expect(model.selectedPrinterActivityMessage == nil)
+}
+
+@MainActor
 @Test func knownPrinterActionReadinessExplainsEmptyState() async {
     let model = AppModel(service: EmptyPrinterService(), bootstrapClient: FakeBootstrapClient())
 

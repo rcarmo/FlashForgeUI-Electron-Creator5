@@ -290,6 +290,15 @@ public final class AppModel {
         return statusFailureSummary(for: printer)
     }
 
+    public var selectedPrinterActivityMessage: String? {
+        guard selectedPrinter != nil else {
+            return nil
+        }
+
+        let trimmedMessage = connectionMessage?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmedMessage.isEmpty ? nil : trimmedMessage
+    }
+
     public func statusFailureSummary(for printer: PrinterSnapshot) -> String? {
         statusFailureMessagesByPrinterID[printer.id]
     }
