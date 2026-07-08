@@ -293,6 +293,71 @@ import Testing
 }
 
 @MainActor
+@Test func discoveryKeepsSavedPrintersThatAreNotRediscovered() async {
+    let studioID = UUID()
+    let workshopID = UUID()
+    let store = RecordingProfileStore(
+        document: PrinterProfileDocument(
+            profiles: [
+                PrinterProfile(
+                    id: studioID,
+                    name: "Saved Studio",
+                    model: "Unknown",
+                    address: "192.168.1.55",
+                    serialNumber: "SN-STUDIO",
+                    commandPort: 8899,
+                    eventPort: 8898,
+                    protocolFormat: .modern,
+                    checkCode: "111111"
+                ),
+                PrinterProfile(
+                    id: workshopID,
+                    name: "Offline Workshop",
+                    model: "Adventurer 5M Pro",
+                    address: "192.168.1.56",
+                    serialNumber: "SN-WORKSHOP",
+                    commandPort: 8899,
+                    eventPort: 8898,
+                    protocolFormat: .modern,
+                    checkCode: "222222"
+                )
+            ],
+            selectedPrinterID: workshopID
+        )
+    )
+    let discoveredPrinter = PrinterSnapshot(
+        name: "Fresh Studio",
+        model: "Adventurer 5M Pro",
+        address: "192.168.1.55",
+        serialNumber: "SN-STUDIO",
+        commandPort: 8899,
+        eventPort: 8898,
+        protocolFormat: .modern,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let model = AppModel(
+        service: SinglePrinterService(printer: discoveredPrinter),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store
+    )
+
+    await model.discoverPrinters()
+
+    #expect(model.printers.count == 2)
+    #expect(model.printers.first { $0.id == studioID }?.name == "Fresh Studio")
+    #expect(model.printers.first { $0.id == workshopID }?.name == "Offline Workshop")
+    #expect(model.selectedPrinter?.id == workshopID)
+    #expect(model.checkCode == "222222")
+    #expect(model.connectionMessage == "Found 1 printer. Kept 1 saved printer that was not discovered.")
+    #expect(store.document.profiles.count == 2)
+    #expect(store.document.profiles.first { $0.id == studioID }?.name == "Fresh Studio")
+    #expect(store.document.profiles.first { $0.id == workshopID }?.checkCode == "222222")
+    #expect(store.document.selectedPrinterID == workshopID)
+}
+
+@MainActor
 @Test func customCameraSettingsPersistWithSelectedPrinterProfile() async {
     let printer = PrinterSnapshot(
         name: "Desk Printer",

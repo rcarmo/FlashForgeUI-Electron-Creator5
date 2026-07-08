@@ -961,10 +961,16 @@ public final class AppModel {
                 return
             }
 
-            printers = discoveredPrinters.map(preservingStoredIdentity(for:))
+            let previousCount = printers.count
+            printers = mergedPrinters(with: discoveredPrinters)
             if selectedPrinter == nil {
                 selection = .printer(printers[0].id)
             }
+            connectionMessage = discoverySummary(
+                discoveredCount: discoveredPrinters.count,
+                previousCount: previousCount,
+                mergedCount: printers.count
+            )
             saveProfiles()
         } catch {
             if printers.isEmpty {
@@ -1308,14 +1314,30 @@ public final class AppModel {
         customCameraURL = config.customCameraURL ?? ""
     }
 
-    private func preservingStoredIdentity(for discoveredPrinter: PrinterSnapshot) -> PrinterSnapshot {
-        guard let storedPrinter = printers.first(where: { isSamePrinter($0, discoveredPrinter) }) else {
-            return discoveredPrinter
+    private func mergedPrinters(with discoveredPrinters: [PrinterSnapshot]) -> [PrinterSnapshot] {
+        let storedPrinters = printers
+        var mergedPrinters: [PrinterSnapshot] = []
+        var matchedStoredPrinterIDs: Set<UUID> = []
+
+        for discoveredPrinter in discoveredPrinters {
+            var printer = discoveredPrinter
+            if let storedPrinter = storedPrinters.first(where: { isSamePrinter($0, discoveredPrinter) }) {
+                printer.id = storedPrinter.id
+                matchedStoredPrinterIDs.insert(storedPrinter.id)
+            }
+
+            if !mergedPrinters.contains(where: { isSamePrinter($0, printer) }) {
+                mergedPrinters.append(printer)
+            }
         }
 
-        var printer = discoveredPrinter
-        printer.id = storedPrinter.id
-        return printer
+        for storedPrinter in storedPrinters where !matchedStoredPrinterIDs.contains(storedPrinter.id) {
+            if !mergedPrinters.contains(where: { isSamePrinter($0, storedPrinter) }) {
+                mergedPrinters.append(storedPrinter)
+            }
+        }
+
+        return mergedPrinters
     }
 
     private func isSamePrinter(_ lhs: PrinterSnapshot, _ rhs: PrinterSnapshot) -> Bool {
@@ -1507,6 +1529,22 @@ public final class AppModel {
         }
 
         return "Identified \(identifiedCount) of \(targetCount) printers. Check the remaining printers' addresses and local network."
+    }
+
+    private func discoverySummary(discoveredCount: Int, previousCount: Int, mergedCount: Int) -> String {
+        let discoveredSummary = "Found \(NativeFormatters.itemCount(discoveredCount, singular: "printer", plural: "printers"))."
+        let savedCount = max(mergedCount - discoveredCount, 0)
+        guard previousCount > 0, savedCount > 0 else {
+            return discoveredSummary
+        }
+
+        let savedSummary = NativeFormatters.itemCount(
+            savedCount,
+            singular: "saved printer",
+            plural: "saved printers"
+        )
+        let suffix = savedCount == 1 ? "was" : "were"
+        return "\(discoveredSummary) Kept \(savedSummary) that \(suffix) not discovered."
     }
 
     private func selectedPrinterIdentificationFailureMessage(for printer: PrinterSnapshot) -> String {
