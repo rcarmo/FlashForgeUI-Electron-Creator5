@@ -734,6 +734,32 @@ public final class AppModel {
         return true
     }
 
+    @discardableResult
+    public func openRecentJobFile(_ fileURL: URL) -> Bool {
+        guard let selectedPrinter else {
+            connectionMessage = "Select a printer first."
+            return false
+        }
+
+        guard isSupportedUploadFile(fileURL) else {
+            removeRecentUploadFile(fileURL, for: selectedPrinter.id)
+            connectionMessage = "Choose a .gcode, .gx, or .3mf file."
+            return false
+        }
+
+        guard doesUploadFileExist(fileURL) else {
+            removeRecentUploadFile(fileURL, for: selectedPrinter.id)
+            if selectedUploadFileURL == fileURL {
+                selectedUploadFileURL = nil
+            }
+            connectionMessage = "\(fileURL.lastPathComponent) is no longer available. Choose the job file again."
+            return false
+        }
+
+        setSelectedUploadFile(fileURL)
+        return true
+    }
+
     public func clearSelectedUploadFile() {
         guard selectedUploadFileURL != nil else {
             return
@@ -1482,6 +1508,20 @@ public final class AppModel {
         recentFiles.removeAll { $0 == fileURL }
         recentFiles.insert(fileURL, at: 0)
         recentUploadFileURLsByPrinterID[selectedPrinter.id] = Array(recentFiles.prefix(5))
+        saveProfiles()
+    }
+
+    private func removeRecentUploadFile(_ fileURL: URL, for printerID: UUID) {
+        guard var recentFiles = recentUploadFileURLsByPrinterID[printerID] else {
+            return
+        }
+
+        recentFiles.removeAll { $0 == fileURL }
+        if recentFiles.isEmpty {
+            recentUploadFileURLsByPrinterID.removeValue(forKey: printerID)
+        } else {
+            recentUploadFileURLsByPrinterID[printerID] = recentFiles
+        }
         saveProfiles()
     }
 

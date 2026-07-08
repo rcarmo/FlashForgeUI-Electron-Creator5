@@ -386,7 +386,7 @@ public struct PrinterDetailView: View {
             } else {
                 ForEach(model.recentUploadFileSummaries) { recentFile in
                     Button {
-                        _ = model.openJobFile(recentFile.fileURL)
+                        _ = model.openRecentJobFile(recentFile.fileURL)
                     } label: {
                         Label(
                             recentFile.menuTitle,

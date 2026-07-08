@@ -2403,6 +2403,36 @@ import Testing
 }
 
 @MainActor
+@Test func openingMissingRecentUploadFilePrunesIt() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+    let missingFileURL = URL(fileURLWithPath: "/tmp/missing-\(UUID().uuidString).gcode")
+    model.selection = .printer(printer.id)
+    model.selectUploadFile(missingFileURL)
+
+    let didOpen = model.openRecentJobFile(missingFileURL)
+
+    #expect(didOpen == false)
+    #expect(model.selectedUploadFileURL == nil)
+    #expect(model.recentUploadFileURLs.isEmpty)
+    #expect(model.canClearRecentUploadFiles == false)
+    #expect(model.connectionMessage == "\(missingFileURL.lastPathComponent) is no longer available. Choose the job file again.")
+}
+
+@MainActor
 @Test func openJobFileRequiresSelectedPrinter() async {
     let model = AppModel(service: EmptyPrinterService(), bootstrapClient: FakeBootstrapClient())
 
