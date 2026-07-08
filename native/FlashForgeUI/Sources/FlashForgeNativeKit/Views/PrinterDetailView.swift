@@ -272,13 +272,13 @@ public struct PrinterDetailView: View {
                 .font(.title2.weight(.semibold))
 
             ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top) {
-                    checkCodeField
+                HStack(alignment: .center, spacing: 12) {
+                    checkCodeStatus
                     refreshButton
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    checkCodeField
+                VStack(alignment: .leading, spacing: 10) {
+                    checkCodeStatus
                     refreshButton
                 }
             }
@@ -305,20 +305,22 @@ public struct PrinterDetailView: View {
         }
     }
 
-    private var checkCodeField: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            SecureField("Check code", text: $model.checkCode)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 220)
-                .disabled(model.selectedPrinterProfileChangeReadinessMessage != nil)
+    private var checkCodeStatus: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(
+                model.selectedPrinterCheckCodeStatusMessage ?? "No check code saved for this printer.",
+                systemImage: model.hasSelectedPrinterCheckCode ? "checkmark.circle" : "info.circle"
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
 
-            if let checkCodeStatusMessage = model.selectedPrinterCheckCodeStatusMessage {
+            Button {
+                onShowSettings()
+            } label: {
                 Label(
-                    checkCodeStatusMessage,
-                    systemImage: model.hasSelectedPrinterCheckCode ? "checkmark.circle" : "info.circle"
+                    model.hasSelectedPrinterCheckCode ? "Edit Connection Settings" : "Add Check Code",
+                    systemImage: "gearshape"
                 )
-                .font(.caption)
-                .foregroundStyle(.secondary)
             }
         }
     }
