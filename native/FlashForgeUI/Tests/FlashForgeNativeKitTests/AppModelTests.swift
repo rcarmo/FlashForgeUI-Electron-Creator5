@@ -2340,6 +2340,55 @@ import Testing
 }
 
 @MainActor
+@Test func uploadFileSelectionIsLockedDuringUpload() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+    let selectedFileURL = URL(fileURLWithPath: "/tmp/current.gcode")
+    let replacementFileURL = URL(fileURLWithPath: "/tmp/replacement.gcode")
+    model.selection = .printer(printer.id)
+    model.selectUploadFile(selectedFileURL)
+    model.isUploadingJob = true
+
+    #expect(model.selectedUploadFileChangeReadinessMessage == "Upload in progress.")
+    #expect(model.canChangeSelectedUploadFile == false)
+    #expect(model.canOpenJobFile == false)
+    #expect(model.canClearSelectedUploadFile == false)
+    #expect(model.canClearRecentUploadFiles == false)
+
+    model.selectUploadFile(replacementFileURL)
+    #expect(model.selectedUploadFileURL == selectedFileURL)
+    #expect(model.recentUploadFileURLs == [selectedFileURL])
+    #expect(model.connectionMessage == "Upload in progress.")
+
+    #expect(model.openJobFile(replacementFileURL) == false)
+    #expect(model.selectedUploadFileURL == selectedFileURL)
+    #expect(model.recentUploadFileURLs == [selectedFileURL])
+
+    #expect(model.openRecentJobFile(selectedFileURL) == false)
+    #expect(model.selectedUploadFileURL == selectedFileURL)
+    #expect(model.recentUploadFileURLs == [selectedFileURL])
+
+    model.clearSelectedUploadFile()
+    #expect(model.selectedUploadFileURL == selectedFileURL)
+
+    model.clearRecentUploadFiles()
+    #expect(model.recentUploadFileURLs == [selectedFileURL])
+}
+
+@MainActor
 @Test func recentUploadFilesAreRememberedPerPrinter() async {
     let firstPrinter = PrinterSnapshot(
         name: "Studio",

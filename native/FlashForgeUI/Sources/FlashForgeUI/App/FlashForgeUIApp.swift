@@ -112,7 +112,7 @@ struct FlashForgeUIApp: App {
                         }
                     }
                 }
-                .disabled(model.recentUploadFileSummaries.isEmpty)
+                .disabled(!model.canChangeSelectedUploadFile || model.recentUploadFileSummaries.isEmpty)
 
                 Button("Clear Job File") {
                     model.clearSelectedUploadFile()

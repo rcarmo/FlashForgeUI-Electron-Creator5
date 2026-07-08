@@ -93,6 +93,7 @@ public struct PrinterDetailView: View {
                 } label: {
                     Label("Choose Job File", systemImage: "doc.badge.plus")
                 }
+                .disabled(!model.canChangeSelectedUploadFile)
             }
         }
     }
@@ -343,6 +344,7 @@ public struct PrinterDetailView: View {
             } label: {
                 Label("Choose Job File", systemImage: "doc.badge.plus")
             }
+            .disabled(!model.canChangeSelectedUploadFile)
 
             recentFilesMenu
 

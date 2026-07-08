@@ -695,7 +695,23 @@ public final class AppModel {
     }
 
     public var canClearSelectedUploadFile: Bool {
-        selectedUploadFileURL != nil
+        selectedUploadFileURL != nil && canChangeSelectedUploadFile
+    }
+
+    public var canChangeSelectedUploadFile: Bool {
+        selectedUploadFileChangeReadinessMessage == nil
+    }
+
+    public var selectedUploadFileChangeReadinessMessage: String? {
+        if isUploadingJob {
+            return "Upload in progress."
+        }
+
+        guard !printers.isEmpty else {
+            return "Add or discover a printer before opening a job file."
+        }
+
+        return nil
     }
 
     public var recentUploadFileURLs: [URL] {
@@ -713,7 +729,7 @@ public final class AppModel {
     }
 
     public var canClearRecentUploadFiles: Bool {
-        !recentUploadFileURLs.isEmpty
+        !recentUploadFileURLs.isEmpty && canChangeSelectedUploadFile
     }
 
     public var selectedCameraStreamConfig: CameraStreamConfig {
@@ -805,7 +821,7 @@ public final class AppModel {
     }
 
     public var canOpenJobFile: Bool {
-        !printers.isEmpty
+        selectedUploadFileChangeReadinessMessage == nil
     }
 
     public func manualPrinterAddressPreview(for address: String) -> String? {
@@ -843,6 +859,11 @@ public final class AppModel {
     }
 
     public func selectUploadFile(_ fileURL: URL) {
+        if let readinessMessage = selectedUploadFileChangeReadinessMessage {
+            connectionMessage = readinessMessage
+            return
+        }
+
         guard selectedPrinter != nil else {
             connectionMessage = "Select a printer first."
             return
@@ -858,6 +879,11 @@ public final class AppModel {
 
     @discardableResult
     public func openJobFile(_ fileURL: URL) -> Bool {
+        if let readinessMessage = selectedUploadFileChangeReadinessMessage {
+            connectionMessage = readinessMessage
+            return false
+        }
+
         guard isSupportedUploadFile(fileURL) else {
             connectionMessage = "Choose a .gcode, .gx, or .3mf file."
             return false
@@ -884,6 +910,11 @@ public final class AppModel {
 
     @discardableResult
     public func openRecentJobFile(_ fileURL: URL) -> Bool {
+        if let readinessMessage = selectedUploadFileChangeReadinessMessage {
+            connectionMessage = readinessMessage
+            return false
+        }
+
         guard let selectedPrinter else {
             connectionMessage = "Select a printer first."
             return false
@@ -909,7 +940,10 @@ public final class AppModel {
     }
 
     public func clearSelectedUploadFile() {
-        guard selectedUploadFileURL != nil else {
+        guard canClearSelectedUploadFile else {
+            if let readinessMessage = selectedUploadFileChangeReadinessMessage {
+                connectionMessage = readinessMessage
+            }
             return
         }
 
@@ -918,6 +952,13 @@ public final class AppModel {
     }
 
     public func clearRecentUploadFiles() {
+        guard canClearRecentUploadFiles else {
+            if let readinessMessage = selectedUploadFileChangeReadinessMessage {
+                connectionMessage = readinessMessage
+            }
+            return
+        }
+
         guard let selectedPrinter else {
             return
         }
