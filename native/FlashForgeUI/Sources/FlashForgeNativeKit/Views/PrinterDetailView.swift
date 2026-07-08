@@ -701,8 +701,7 @@ public struct PrinterDetailView: View {
             items.append(contentsOf: [
                 TelemetryItem(title: "HTTP Model", value: status.modelName),
                 TelemetryItem(title: "Toolheads", value: "\(status.nozzleCount)"),
-                TelemetryItem(title: "Runtime", value: NativeFormatters.duration(status.printDuration)),
-                TelemetryItem(title: "Camera URL", value: status.cameraStreamURL.isEmpty ? "None" : "Reported")
+                TelemetryItem(title: "Runtime", value: NativeFormatters.duration(status.printDuration))
             ])
         }
 
