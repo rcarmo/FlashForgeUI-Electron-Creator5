@@ -25,20 +25,7 @@ public struct PrinterDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 header
-                jobSection
-                if let materialStation = printer.materialStation {
-                    MaterialStationView(station: materialStation)
-                }
-                controlsSection
-                CameraPreviewView(
-                    config: model.selectedCameraStreamConfig,
-                    recoveryReadiness: cameraRecoveryReadinessMessage(for:)
-                ) { _ in
-                    model.acknowledgeCameraOpen()
-                } onRecover: { recoveryAction in
-                    handleCameraRecovery(recoveryAction)
-                }
-                telemetrySection
+                detailGrid
             }
             .padding(28)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -98,6 +85,61 @@ public struct PrinterDetailView: View {
                 }
                 .disabled(!model.canChangeSelectedUploadFile)
             }
+        }
+    }
+
+    private var detailGrid: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 20) {
+                leftGridColumn
+                    .frame(minWidth: 360, idealWidth: 440, maxWidth: 520, alignment: .topLeading)
+
+                rightGridColumn
+                    .frame(minWidth: 360, maxWidth: .infinity, alignment: .topLeading)
+            }
+
+            VStack(alignment: .leading, spacing: 20) {
+                cameraSection
+                controlsSection
+                telemetrySection
+                jobSection
+                materialStationSection
+            }
+        }
+    }
+
+    private var leftGridColumn: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            cameraSection
+            controlsSection
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var rightGridColumn: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            telemetrySection
+            jobSection
+            materialStationSection
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var cameraSection: some View {
+        CameraPreviewView(
+            config: model.selectedCameraStreamConfig,
+            recoveryReadiness: cameraRecoveryReadinessMessage(for:)
+        ) { _ in
+            model.acknowledgeCameraOpen()
+        } onRecover: { recoveryAction in
+            handleCameraRecovery(recoveryAction)
+        }
+    }
+
+    @ViewBuilder
+    private var materialStationSection: some View {
+        if let materialStation = printer.materialStation {
+            MaterialStationView(station: materialStation)
         }
     }
 
