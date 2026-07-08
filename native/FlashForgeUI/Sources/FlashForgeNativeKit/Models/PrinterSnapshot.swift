@@ -170,6 +170,7 @@ public struct MaterialStationStatus: Hashable, Codable, Sendable {
     public var connected: Bool
     public var slots: [MaterialStationSlot]
     public var activeSlot: Int?
+    public var loadingSlot: Int?
     public var overallStatus: MaterialStationOverallStatus
     public var errorMessage: String?
 
@@ -177,12 +178,14 @@ public struct MaterialStationStatus: Hashable, Codable, Sendable {
         connected: Bool,
         slots: [MaterialStationSlot],
         activeSlot: Int? = nil,
+        loadingSlot: Int? = nil,
         overallStatus: MaterialStationOverallStatus,
         errorMessage: String? = nil
     ) {
         self.connected = connected
         self.slots = slots
         self.activeSlot = activeSlot
+        self.loadingSlot = loadingSlot
         self.overallStatus = overallStatus
         self.errorMessage = errorMessage
     }

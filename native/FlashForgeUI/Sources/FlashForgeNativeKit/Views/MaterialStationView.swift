@@ -30,11 +30,12 @@ public struct MaterialStationView: View {
             }
 
             if !station.displaySlots.isEmpty {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
+                LazyVGrid(columns: slotColumns, spacing: 12) {
                     ForEach(station.displaySlots) { slot in
                         MaterialSlotCard(
                             slot: slot,
-                            isActive: station.activeSlot == slot.slotId
+                            isActive: station.activeSlot == slot.slotId,
+                            isLoading: station.loadingSlot == slot.slotId
                         )
                     }
                 }
@@ -42,6 +43,17 @@ public struct MaterialStationView: View {
         }
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var slotColumns: [GridItem] {
+        if station.displaySlots.count == 4 {
+            return [
+                GridItem(.flexible(minimum: 150), spacing: 12),
+                GridItem(.flexible(minimum: 150), spacing: 12)
+            ]
+        }
+
+        return [GridItem(.adaptive(minimum: 150), spacing: 12)]
     }
 
     private var statusColor: Color {
@@ -59,17 +71,15 @@ public struct MaterialStationView: View {
 private struct MaterialSlotCard: View {
     let slot: MaterialStationSlot
     let isActive: Bool
+    let isLoading: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Slot \(slot.slotId)")
                     .font(.headline)
                 Spacer()
-                if isActive {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.tint)
-                }
+                slotBadges
             }
 
             HStack(spacing: 8) {
@@ -81,10 +91,52 @@ private struct MaterialSlotCard: View {
                     .foregroundStyle(slot.isEmpty ? .secondary : .primary)
                     .lineLimit(1)
             }
+
+            HStack(spacing: 10) {
+                Label(slot.isEmpty ? "Empty" : "Loaded", systemImage: slot.isEmpty ? "circle" : "checkmark.circle")
+                    .foregroundStyle(.secondary)
+
+                if let materialColor = normalizedColorLabel {
+                    Label(materialColor, systemImage: "paintpalette")
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .font(.caption)
         }
         .padding(12)
+        .frame(minHeight: 112)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private var slotBadges: some View {
+        HStack(spacing: 6) {
+            if isLoading {
+                Label("Loading", systemImage: "arrow.triangle.2.circlepath")
+                    .labelStyle(.iconOnly)
+                    .foregroundStyle(.orange)
+                    .help("Material is loading from this slot")
+            }
+
+            if isActive {
+                Label("Active", systemImage: "checkmark.circle.fill")
+                    .labelStyle(.iconOnly)
+                    .foregroundStyle(.tint)
+                    .help("Active material slot")
+            }
+        }
+    }
+
+    private var normalizedColorLabel: String? {
+        guard let materialColor = slot.materialColor?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !slot.isEmpty,
+              !materialColor.isEmpty else {
+            return nil
+        }
+
+        return materialColor.hasPrefix("#") ? materialColor.uppercased() : "#\(materialColor.uppercased())"
     }
 
     private var slotColor: Color {

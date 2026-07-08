@@ -558,6 +558,7 @@ public struct MaterialStationInfo: Decodable, Equatable, Sendable {
             connected: true,
             slots: normalizedSlots,
             activeSlot: currentSlot == 0 ? nil : currentSlot,
+            loadingSlot: currentLoadSlot == 0 ? nil : currentLoadSlot,
             overallStatus: stateAction > 0 ? .warming : .ready
         )
     }

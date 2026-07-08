@@ -214,6 +214,7 @@ import Testing
       "status": "ready",
       "HasMatlStation": true,
       "MatlStationInfo": {
+        "CurrentLoadSlot": "2",
         "CurrentSlot": "4",
         "SlotCnt": "4",
         "SlotInfos": [
@@ -234,6 +235,7 @@ import Testing
     let station = detail.status.materialStation
 
     #expect(station?.activeSlot == 4)
+    #expect(station?.loadingSlot == 2)
     #expect(station?.overallStatus == .warming)
     #expect(station?.slots == [
         MaterialStationSlot(slotId: 1, isEmpty: true),
