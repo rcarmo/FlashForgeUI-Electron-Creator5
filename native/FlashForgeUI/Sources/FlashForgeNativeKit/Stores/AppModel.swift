@@ -882,7 +882,7 @@ public final class AppModel {
                 PrinterUploadRequest(
                     fileURL: fileURL,
                     startPrint: startPrintAfterUpload,
-                    levelingBeforePrint: levelingBeforePrint,
+                    levelingBeforePrint: startPrintAfterUpload && levelingBeforePrint,
                     firmwareVersion: lastModernStatus?.firmwareVersion ?? lastPrinterInfo?.firmwareVersion
                 ),
                 host: printer.address,
