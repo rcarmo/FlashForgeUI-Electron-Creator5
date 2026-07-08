@@ -359,7 +359,9 @@ public struct PrinterDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle("Start after upload", isOn: $model.startPrintAfterUpload)
 
-            Toggle("Level before print", isOn: $model.levelingBeforePrint)
+            if model.canChooseUploadLeveling {
+                Toggle("Level before print", isOn: $model.levelingBeforePrint)
+            }
 
             Label(model.selectedUploadActionSummary, systemImage: "checklist")
                 .font(.callout)

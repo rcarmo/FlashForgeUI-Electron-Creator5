@@ -2062,15 +2062,18 @@ import Testing
     #expect(model.selectedUploadFileSummary?.isSelected == true)
     #expect(model.selectedPendingJobSummary == "studio.gcode selected for upload.")
     #expect(model.selectedUploadActionSummary == "Upload, level the bed, then start printing.")
+    #expect(model.canChooseUploadLeveling == true)
     #expect(model.canClearSelectedUploadFile == true)
     #expect(model.selectedUploadReadinessMessage == "Enter the printer check code to upload a job.")
     #expect(model.canUploadSelectedJob == false)
 
     model.levelingBeforePrint = false
     #expect(model.selectedUploadActionSummary == "Upload, then start printing without bed leveling.")
+    #expect(model.canChooseUploadLeveling == true)
 
     model.startPrintAfterUpload = false
     #expect(model.selectedUploadActionSummary == "Upload only. The print will stay on the printer until you start it.")
+    #expect(model.canChooseUploadLeveling == false)
 
     model.selection = .printer(secondPrinter.id)
     #expect(model.selectedUploadFileURL == nil)

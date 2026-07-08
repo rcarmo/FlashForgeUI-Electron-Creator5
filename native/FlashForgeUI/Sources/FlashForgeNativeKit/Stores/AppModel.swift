@@ -526,6 +526,10 @@ public final class AppModel {
         return "Upload only. The print will stay on the printer until you start it."
     }
 
+    public var canChooseUploadLeveling: Bool {
+        startPrintAfterUpload
+    }
+
     public var canClearSelectedUploadFile: Bool {
         selectedUploadFileURL != nil
     }
