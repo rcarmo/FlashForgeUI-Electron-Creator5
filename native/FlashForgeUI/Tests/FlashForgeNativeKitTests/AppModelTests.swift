@@ -1996,6 +1996,7 @@ import Testing
 @MainActor
 @Test func rejectedJobCommandShowsPrinterReason() async {
     let commandClient = FailingCommandClient(error: ModernPrinterCommandError.rejected("Printer is not printing"))
+    let modernClient = FailingModernClient(error: ModernPrinterHTTPError.transportFailed)
     let printer = PrinterSnapshot(
         name: "Desk Printer",
         model: "AD5X",
@@ -2010,6 +2011,7 @@ import Testing
     let model = AppModel(
         service: PreviewPrinterService(),
         bootstrapClient: FakeBootstrapClient(),
+        modernClient: modernClient,
         commandClient: commandClient,
         printers: [printer]
     )
@@ -2018,6 +2020,7 @@ import Testing
 
     await model.sendSelectedPrinterJobCommand(.pause)
 
+    #expect(modernClient.requestCount == 1)
     #expect(model.connectionMessage == "Printer rejected pause: Printer is not printing.")
     #expect(model.isSendingJobCommand == false)
     #expect(model.activeJobCommand == nil)
@@ -2090,6 +2093,7 @@ import Testing
 @MainActor
 @Test func httpJobCommandFailureShowsStatusAndPrinterReason() async {
     let commandClient = FailingCommandClient(error: ModernPrinterCommandError.httpStatus(409, "Printer is not paused"))
+    let modernClient = FailingModernClient(error: ModernPrinterHTTPError.transportFailed)
     let printer = PrinterSnapshot(
         name: "Desk Printer",
         model: "AD5X",
@@ -2104,6 +2108,7 @@ import Testing
     let model = AppModel(
         service: PreviewPrinterService(),
         bootstrapClient: FakeBootstrapClient(),
+        modernClient: modernClient,
         commandClient: commandClient,
         printers: [printer]
     )
@@ -2112,6 +2117,7 @@ import Testing
 
     await model.sendSelectedPrinterJobCommand(.resume)
 
+    #expect(modernClient.requestCount == 1)
     #expect(model.connectionMessage == "Could not send resume. Printer returned HTTP 409: Printer is not paused.")
     #expect(model.isSendingJobCommand == false)
     #expect(model.activeJobCommand == nil)
