@@ -112,8 +112,10 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
     private static let pid5M = 35
     private static let pid5MPro = 36
     private static let pidAD5X = 38
+    private static let pidCreator5Pro = 41
 
     public var name: String?
+    public var model: String?
     public var firmwareVersion: String?
     public var pid: Int?
     public var rawStatus: String?
@@ -123,18 +125,23 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
     public var leftTargetTemp: Double?
     public var rightTemp: Double?
     public var rightTargetTemp: Double?
+    public var nozzleCnt: Int?
+    public var nozzleTemps: [Double]
+    public var nozzleTargetTemps: [Double]
     public var extraTemperatureFields: [String: Double]
     public var printFileName: String?
     public var printProgress: Double?
     public var estimatedTime: Double?
     public var printDuration: Double?
     public var rightFilamentType: String?
+    public var camera: Int?
     public var cameraStreamUrl: String?
     public var hasMatlStation: Bool?
     public var matlStationInfo: MaterialStationInfo?
 
     enum CodingKeys: String, CodingKey {
         case name
+        case model
         case firmwareVersion
         case pid
         case rawStatus = "status"
@@ -144,11 +151,15 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
         case leftTargetTemp
         case rightTemp
         case rightTargetTemp
+        case nozzleCnt
+        case nozzleTemps
+        case nozzleTargetTemps
         case printFileName
         case printProgress
         case estimatedTime
         case printDuration
         case rightFilamentType
+        case camera
         case cameraStreamUrl
         case hasMatlStation
         case matlStationInfo
@@ -163,6 +174,7 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.name = try container.decodeIfPresent(String.self, forKey: .name)
             ?? container.decodeIfPresent(String.self, forKey: .Name)
+        self.model = try container.decodeIfPresent(String.self, forKey: .model)
         self.firmwareVersion = try container.decodeIfPresent(String.self, forKey: .firmwareVersion)
             ?? container.decodeIfPresent(String.self, forKey: .FirmwareVersion)
         self.pid = try container.decodeIfPresent(Int.self, forKey: .pid)
@@ -174,12 +186,16 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
         self.leftTargetTemp = try container.decodeFlexibleDoubleIfPresent(for: .leftTargetTemp)
         self.rightTemp = try container.decodeFlexibleDoubleIfPresent(for: .rightTemp)
         self.rightTargetTemp = try container.decodeFlexibleDoubleIfPresent(for: .rightTargetTemp)
+        self.nozzleCnt = try container.decodeFlexibleIntIfPresent(for: .nozzleCnt)
+        self.nozzleTemps = try container.decodeFlexibleDoubleArray(for: .nozzleTemps, defaultValue: [])
+        self.nozzleTargetTemps = try container.decodeFlexibleDoubleArray(for: .nozzleTargetTemps, defaultValue: [])
         self.extraTemperatureFields = try Self.decodeExtraTemperatureFields(from: decoder)
         self.printFileName = try container.decodeIfPresent(String.self, forKey: .printFileName)
         self.printProgress = try container.decodeIfPresent(Double.self, forKey: .printProgress)
         self.estimatedTime = try container.decodeIfPresent(Double.self, forKey: .estimatedTime)
         self.printDuration = try container.decodeIfPresent(Double.self, forKey: .printDuration)
         self.rightFilamentType = try container.decodeIfPresent(String.self, forKey: .rightFilamentType)
+        self.camera = try container.decodeIfPresent(Int.self, forKey: .camera)
         self.cameraStreamUrl = try container.decodeIfPresent(String.self, forKey: .cameraStreamUrl)
         self.hasMatlStation = try container.decodeIfPresent(Bool.self, forKey: .hasMatlStation)
             ?? container.decodeIfPresent(Bool.self, forKey: .HasMatlStation)
@@ -189,27 +205,38 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
 
     public var status: ModernPrinterStatus {
         let hasMaterialStation = hasMatlStation == true || (matlStationInfo?.slotCnt ?? 0) > 0 || !(matlStationInfo?.slotInfos ?? []).isEmpty
+        let reportedModel = model?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let modelIdentity = reportedModel.isEmpty ? name ?? "" : reportedModel
+        let normalizedModelIdentity = Self.normalizedModelName(modelIdentity)
+        let isCreator5Pro: Bool
         let isAD5X: Bool
         let isPro: Bool
 
-        if let pid, [Self.pid5M, Self.pid5MPro, Self.pidAD5X].contains(pid) {
+        if let pid, [Self.pid5M, Self.pid5MPro, Self.pidAD5X, Self.pidCreator5Pro].contains(pid) {
+            isCreator5Pro = pid == Self.pidCreator5Pro || normalizedModelIdentity.contains("creator5pro")
             isAD5X = pid == Self.pidAD5X
-            isPro = pid == Self.pid5MPro
+            isPro = pid == Self.pid5MPro || isCreator5Pro
         } else {
-            isAD5X = name == "AD5X" || hasMaterialStation
-            isPro = (name ?? "").contains("Pro") && !isAD5X
+            isCreator5Pro = normalizedModelIdentity.contains("creator5pro")
+            isAD5X = !isCreator5Pro && (normalizedModelIdentity.contains("ad5x") || hasMaterialStation)
+            isPro = !isAD5X && (normalizedModelIdentity.contains("5mpro") || normalizedModelIdentity.contains("pro"))
         }
 
+        let nozzleCount = inferredNozzleCount
         return ModernPrinterStatus(
             displayName: name ?? "Unknown Printer",
+            reportedModel: reportedModel,
             firmwareVersion: firmwareVersion ?? "",
             pid: pid,
             isPro: isPro,
             isAD5X: isAD5X,
+            isCreator5Pro: isCreator5Pro,
+            nozzleCount: nozzleCount,
+            hasCamera: cameraStreamUrl?.isEmpty == false || camera == 1,
             state: ModernPrinterState(rawDetailStatus: rawStatus ?? ""),
             nozzleCurrent: rightTemp ?? 0,
             nozzleTarget: rightTargetTemp ?? 0,
-            toolheadTemperatures: toolheadTemperatures,
+            toolheadTemperatures: normalizedToolheadTemperatures(nozzleCount: nozzleCount),
             bedCurrent: platTemp ?? 0,
             bedTarget: platTargetTemp ?? 0,
             printFileName: printFileName ?? "",
@@ -224,6 +251,12 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
 }
 
 private extension ModernPrinterDetail {
+    static func normalizedModelName(_ modelName: String) -> String {
+        modelName
+            .lowercased()
+            .filter { $0.isLetter || $0.isNumber }
+    }
+
     static func decodeExtraTemperatureFields(from decoder: Decoder) throws -> [String: Double] {
         let container = try decoder.container(keyedBy: DynamicCodingKey.self)
         var fields: [String: Double] = [:]
@@ -253,6 +286,47 @@ private extension ModernPrinterDetail {
             || lowercasedKey.contains("extruder")
             || lowercasedKey.contains("head")
             || lowercasedKey.contains { $0.isNumber }
+    }
+
+    var inferredNozzleCount: Int {
+        max(nozzleCnt ?? 0, nozzleTemps.count, nozzleTargetTemps.count, toolheadTemperatures.count, 1)
+    }
+
+    func normalizedToolheadTemperatures(nozzleCount: Int) -> [ToolheadTemperature] {
+        if !nozzleTemps.isEmpty || !nozzleTargetTemps.isEmpty {
+            return arrayToolheadTemperatures(nozzleCount: nozzleCount)
+        }
+
+        var toolheads = toolheadTemperatures
+        guard nozzleCount > toolheads.count else {
+            return toolheads
+        }
+
+        for index in (toolheads.count + 1)...nozzleCount {
+            toolheads.append(
+                ToolheadTemperature(
+                    id: "toolhead-\(index)",
+                    label: "Toolhead \(index)",
+                    reading: TemperatureReading(current: 0)
+                )
+            )
+        }
+        return toolheads
+    }
+
+    private func arrayToolheadTemperatures(nozzleCount: Int) -> [ToolheadTemperature] {
+        (1...nozzleCount).map { index in
+            let arrayIndex = index - 1
+            let current = nozzleTemps.indices.contains(arrayIndex) ? nozzleTemps[arrayIndex] : 0
+            let target = nozzleTargetTemps.indices.contains(arrayIndex)
+                ? normalizedTarget(nozzleTargetTemps[arrayIndex])
+                : nil
+            return ToolheadTemperature(
+                id: "toolhead-\(index)",
+                label: "Toolhead \(index)",
+                reading: TemperatureReading(current: current, target: target)
+            )
+        }
     }
 
     var toolheadTemperatures: [ToolheadTemperature] {
@@ -575,6 +649,34 @@ private extension KeyedDecodingContainer {
             return Double(value.trimmingCharacters(in: .whitespacesAndNewlines))
         }
         return nil
+    }
+
+    func decodeFlexibleIntIfPresent(for key: Key) throws -> Int? {
+        if let value = try? decodeIfPresent(Int.self, forKey: key) {
+            return value
+        }
+        if let value = try? decodeIfPresent(Double.self, forKey: key) {
+            return Int(value)
+        }
+        if let value = try? decodeIfPresent(String.self, forKey: key) {
+            return Int(value.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        return nil
+    }
+
+    func decodeFlexibleDoubleArray(for key: Key, defaultValue: [Double]) throws -> [Double] {
+        if let values = try? decodeIfPresent([Double].self, forKey: key) {
+            return values
+        }
+        if let values = try? decodeIfPresent([Int].self, forKey: key) {
+            return values.map(Double.init)
+        }
+        if let values = try? decodeIfPresent([String].self, forKey: key) {
+            return values.compactMap { value in
+                Double(value.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+        }
+        return defaultValue
     }
 
     func decodeFlexibleInt(

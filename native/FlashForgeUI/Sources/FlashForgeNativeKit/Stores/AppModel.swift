@@ -2299,7 +2299,11 @@ public final class AppModel {
     }
 
     private func supportsLocalCameraFallback(printer: PrinterSnapshot, status: ModernPrinterStatus?) -> Bool {
-        status?.isPro == true || status?.isAD5X == true || modelSupportsLocalCameraFallback(printer.model)
+        status?.hasCamera == true
+            || status?.isPro == true
+            || status?.isAD5X == true
+            || status?.isCreator5Pro == true
+            || modelSupportsLocalCameraFallback(printer.model)
     }
 
     private func modelSupportsLocalCameraFallback(_ model: String) -> Bool {
@@ -2389,7 +2393,7 @@ public final class AppModel {
         printers[index].activeJob = status.jobSnapshot
         printers[index].material = status.materialSnapshot
         printers[index].materialStation = status.materialStation
-        printers[index].cameraState = status.cameraStreamURL.isEmpty && !status.isPro && !status.isAD5X ? .unavailable : .available
+        printers[index].cameraState = status.hasCamera || status.isPro || status.isAD5X || status.isCreator5Pro ? .available : .unavailable
         recordTemperatureHistory(for: printerID, status: status)
     }
 

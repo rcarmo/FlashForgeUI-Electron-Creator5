@@ -100,6 +100,58 @@ import Testing
     ])
 }
 
+@Test func decodesCreator5ProCharacteristicsFromDetailPayload() throws {
+    let json = """
+    {
+      "name": "Creator 5 Pro",
+      "model": "Creator 5 Pro",
+      "pid": 41,
+      "firmwareVersion": "1.9.4",
+      "status": "ready",
+      "camera": 1,
+      "cameraStreamUrl": "http://192.168.1.161:8080/?action=stream",
+      "matlStationInfo": {
+        "currentSlot": 0,
+        "slotCnt": 4,
+        "slotInfos": [
+          { "slotId": 1, "hasFilament": true, "materialName": "PLA", "materialColor": "#7BD9F0" },
+          { "slotId": 2, "hasFilament": true, "materialName": "PLA", "materialColor": "#FFF245" },
+          { "slotId": 3, "hasFilament": true, "materialName": "PLA", "materialColor": "#F435F6" },
+          { "slotId": 4, "hasFilament": true, "materialName": "PLA", "materialColor": "#FFFFFF" }
+        ],
+        "stateAction": 0,
+        "stateStep": 0
+      },
+      "nozzleCnt": 4,
+      "nozzleTargetTemps": [0, 0, 0, 0],
+      "nozzleTemps": [25, 26, 26, 27],
+      "platTargetTemp": 0,
+      "platTemp": 25,
+      "rightTargetTemp": 0,
+      "rightTemp": 25
+    }
+    """.data(using: .utf8)!
+
+    let detail = try JSONDecoder().decode(ModernPrinterDetail.self, from: json)
+    let status = detail.status
+
+    #expect(status.modelName == "Creator 5 Pro")
+    #expect(status.reportedModel == "Creator 5 Pro")
+    #expect(status.pid == 41)
+    #expect(status.isCreator5Pro == true)
+    #expect(status.isAD5X == false)
+    #expect(status.nozzleCount == 4)
+    #expect(status.hasCamera == true)
+    #expect(status.cameraStreamURL == "http://192.168.1.161:8080/?action=stream")
+    #expect(status.toolheadTemperatures == [
+        ToolheadTemperature(id: "toolhead-1", label: "Toolhead 1", reading: TemperatureReading(current: 25)),
+        ToolheadTemperature(id: "toolhead-2", label: "Toolhead 2", reading: TemperatureReading(current: 26)),
+        ToolheadTemperature(id: "toolhead-3", label: "Toolhead 3", reading: TemperatureReading(current: 26)),
+        ToolheadTemperature(id: "toolhead-4", label: "Toolhead 4", reading: TemperatureReading(current: 27))
+    ])
+    #expect(status.materialStation?.slots.count == 4)
+}
+
 @Test func decodesZeroBasedFourToolheadTemperatures() throws {
     let json = """
     {

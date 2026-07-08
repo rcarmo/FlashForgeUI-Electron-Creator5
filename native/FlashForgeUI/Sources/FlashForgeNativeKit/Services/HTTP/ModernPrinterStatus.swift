@@ -2,10 +2,14 @@ import Foundation
 
 public struct ModernPrinterStatus: Equatable, Sendable {
     public var displayName: String
+    public var reportedModel: String
     public var firmwareVersion: String
     public var pid: Int?
     public var isPro: Bool
     public var isAD5X: Bool
+    public var isCreator5Pro: Bool
+    public var nozzleCount: Int
+    public var hasCamera: Bool
     public var state: ModernPrinterState
     public var nozzleCurrent: Double
     public var nozzleTarget: Double
@@ -22,10 +26,14 @@ public struct ModernPrinterStatus: Equatable, Sendable {
 
     public init(
         displayName: String,
+        reportedModel: String = "",
         firmwareVersion: String,
         pid: Int? = nil,
         isPro: Bool,
         isAD5X: Bool,
+        isCreator5Pro: Bool = false,
+        nozzleCount: Int = 1,
+        hasCamera: Bool = false,
         state: ModernPrinterState,
         nozzleCurrent: Double,
         nozzleTarget: Double,
@@ -41,10 +49,14 @@ public struct ModernPrinterStatus: Equatable, Sendable {
         materialStation: MaterialStationStatus? = nil
     ) {
         self.displayName = displayName
+        self.reportedModel = reportedModel
         self.firmwareVersion = firmwareVersion
         self.pid = pid
         self.isPro = isPro
         self.isAD5X = isAD5X
+        self.isCreator5Pro = isCreator5Pro
+        self.nozzleCount = nozzleCount
+        self.hasCamera = hasCamera
         self.state = state
         self.nozzleCurrent = nozzleCurrent
         self.nozzleTarget = nozzleTarget
@@ -67,6 +79,12 @@ public struct ModernPrinterStatus: Equatable, Sendable {
     }
 
     public var modelName: String {
+        if !reportedModel.isEmpty {
+            return reportedModel
+        }
+        if isCreator5Pro {
+            return "Creator 5 Pro"
+        }
         if isAD5X {
             return "AD5X"
         }
