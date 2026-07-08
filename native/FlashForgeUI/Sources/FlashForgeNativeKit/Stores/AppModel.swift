@@ -884,6 +884,10 @@ public final class AppModel {
         selectedUploadFileChangeReadinessMessage == nil
     }
 
+    public var manualPrinterProfileChangeReadinessMessage: String? {
+        selectedPrinterProfileChangeReadinessMessage
+    }
+
     public func manualPrinterAddressPreview(for address: String) -> String? {
         guard let normalizedAddress = normalizedManualPrinterAddress(address) else {
             return nil
@@ -904,7 +908,8 @@ public final class AppModel {
     }
 
     public func canSubmitManualPrinterAddress(_ address: String) -> Bool {
-        normalizedManualPrinterAddress(address) != nil
+        manualPrinterProfileChangeReadinessMessage == nil
+            && normalizedManualPrinterAddress(address) != nil
     }
 
     public func start(discoverOnLaunch: Bool) async {
@@ -1046,6 +1051,11 @@ public final class AppModel {
 
     @discardableResult
     public func addManualPrinter(name: String, address: String, checkCode: String = "") -> Bool {
+        if let readinessMessage = manualPrinterProfileChangeReadinessMessage {
+            connectionMessage = readinessMessage
+            return false
+        }
+
         let trimmedAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedAddress.isEmpty else {
             connectionMessage = "Enter the printer address."

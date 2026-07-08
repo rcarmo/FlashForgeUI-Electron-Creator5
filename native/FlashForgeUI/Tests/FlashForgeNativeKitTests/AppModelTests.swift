@@ -717,6 +717,27 @@ import Testing
 }
 
 @MainActor
+@Test func manualPrinterProfileChangesAreLockedDuringPrinterOperations() async {
+    let store = RecordingProfileStore()
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store
+    )
+    model.isDiscovering = true
+
+    #expect(model.manualPrinterProfileChangeReadinessMessage == "Discovery in progress.")
+    #expect(model.canSubmitManualPrinterAddress("192.168.1.77") == false)
+
+    let didAdd = model.addManualPrinter(name: "Workshop", address: "192.168.1.77", checkCode: "123456")
+
+    #expect(didAdd == false)
+    #expect(model.printers.isEmpty)
+    #expect(store.document.profiles.isEmpty)
+    #expect(model.connectionMessage == "Discovery in progress.")
+}
+
+@MainActor
 @Test func manualPrinterProfileNormalizesPastedAddressURL() async {
     let store = RecordingProfileStore()
     let model = AppModel(

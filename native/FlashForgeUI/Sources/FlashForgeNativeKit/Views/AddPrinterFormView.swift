@@ -26,10 +26,12 @@ public struct AddPrinterFormView: View {
         VStack(alignment: .leading, spacing: 12) {
             TextField("Name", text: $printerName)
                 .textFieldStyle(.roundedBorder)
+                .disabled(model.manualPrinterProfileChangeReadinessMessage != nil)
 
             VStack(alignment: .leading, spacing: 4) {
                 TextField("Address or URL", text: $printerAddress)
                     .textFieldStyle(.roundedBorder)
+                    .disabled(model.manualPrinterProfileChangeReadinessMessage != nil)
                     .onChange(of: printerAddress) {
                         validationMessage = model.manualPrinterAddressValidationMessage(for: printerAddress)
                     }
@@ -48,9 +50,16 @@ public struct AddPrinterFormView: View {
             VStack(alignment: .leading, spacing: 4) {
                 SecureField("Check code", text: $checkCode)
                     .textFieldStyle(.roundedBorder)
+                    .disabled(model.manualPrinterProfileChangeReadinessMessage != nil)
 
                 Text(AppModel.manualPrinterCheckCodeHelpMessage)
                     .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let readinessMessage = model.manualPrinterProfileChangeReadinessMessage {
+                Label(readinessMessage, systemImage: "info.circle")
+                    .font(.callout)
                     .foregroundStyle(.secondary)
             }
 
