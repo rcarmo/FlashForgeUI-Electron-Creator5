@@ -271,17 +271,7 @@ public struct PrinterDetailView: View {
             Text("Common Actions")
                 .font(.title2.weight(.semibold))
 
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .center, spacing: 12) {
-                    checkCodeStatus
-                    refreshButton
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    checkCodeStatus
-                    refreshButton
-                }
-            }
+            refreshButton
 
             if statusRefreshIntervalSeconds > 0 {
                 Label("Auto-refresh every \(statusRefreshIntervalSeconds) seconds", systemImage: "clock.arrow.circlepath")
@@ -301,26 +291,6 @@ public struct PrinterDetailView: View {
                 Label(uploadReadinessMessage, systemImage: "info.circle")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var checkCodeStatus: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(
-                model.selectedPrinterCheckCodeStatusMessage ?? "No check code saved for this printer.",
-                systemImage: model.hasSelectedPrinterCheckCode ? "checkmark.circle" : "info.circle"
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-
-            Button {
-                onShowSettings()
-            } label: {
-                Label(
-                    model.hasSelectedPrinterCheckCode ? "Edit Connection Settings" : "Add Check Code",
-                    systemImage: "gearshape"
-                )
             }
         }
     }
