@@ -89,17 +89,20 @@ public struct PrinterDetailView: View {
     }
 
     private var detailGrid: some View {
-        DashboardMasonryLayout(minimumColumnWidth: 340, maximumColumnCount: 3, spacing: 20) {
+        DashboardMasonryLayout(minimumColumnWidth: 420, maximumColumnCount: 2, spacing: 20) {
             cameraSection
                 .layoutValue(key: DashboardColumnPreferenceKey.self, value: 0)
 
             telemetrySection
+                .layoutValue(key: DashboardColumnPreferenceKey.self, value: 1)
 
             controlsSection
                 .layoutValue(key: DashboardColumnPreferenceKey.self, value: 0)
 
             jobSection
+                .layoutValue(key: DashboardColumnPreferenceKey.self, value: 1)
             materialStationSection
+                .layoutValue(key: DashboardColumnPreferenceKey.self, value: 1)
         }
     }
 
