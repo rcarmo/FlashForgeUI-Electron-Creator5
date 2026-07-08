@@ -53,7 +53,7 @@ struct FlashForgeUIApp: App {
                 .keyboardShortcut("k", modifiers: [.command])
                 .disabled(!model.canConnectSelectedPrinter)
 
-                Button("Forget Saved Check Code") {
+                Button("Forget Saved Access Code") {
                     model.clearSelectedPrinterCheckCode()
                 }
                 .disabled(!model.canClearSelectedPrinterCheckCode)

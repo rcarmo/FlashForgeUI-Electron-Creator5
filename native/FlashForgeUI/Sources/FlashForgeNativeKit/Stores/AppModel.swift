@@ -124,7 +124,9 @@ public final class AppModel {
     private var printerInfoByPrinterID: [UUID: PrinterInfo]
     private var modernStatusesByPrinterID: [UUID: ModernPrinterStatus]
     private var statusUpdatedAtByPrinterID: [UUID: Date]
+    private var identificationFailureMessagesByPrinterID: [UUID: String]
     private var statusFailureMessagesByPrinterID: [UUID: String]
+    private var temperatureHistoryByPrinterID: [UUID: [String: [TemperatureHistoryPoint]]]
     private var uploadFileURLsByPrinterID: [UUID: URL]
     private var recentUploadFileURLsByPrinterID: [UUID: [URL]]
     private var pendingOpenedJobFileURL: URL?
@@ -167,7 +169,9 @@ public final class AppModel {
         self.printerInfoByPrinterID = [:]
         self.modernStatusesByPrinterID = [:]
         self.statusUpdatedAtByPrinterID = [:]
+        self.identificationFailureMessagesByPrinterID = [:]
         self.statusFailureMessagesByPrinterID = [:]
+        self.temperatureHistoryByPrinterID = [:]
         self.uploadFileURLsByPrinterID = [:]
         self.recentUploadFileURLsByPrinterID = [:]
         self.pendingOpenedJobFileURL = nil
@@ -201,7 +205,7 @@ public final class AppModel {
         }
 
         return hasSelectedPrinterCheckCode
-            ? "Check code saved for this printer."
+            ? "Printer access code saved."
             : "Needed for refresh, upload, and job controls."
     }
 
@@ -218,7 +222,7 @@ public final class AppModel {
         }
 
         checkCode = ""
-        connectionMessage = "Check code cleared for this printer."
+        connectionMessage = "Printer access code cleared."
     }
 
     public var activePrintCount: Int {
@@ -226,7 +230,7 @@ public final class AppModel {
     }
 
     public var attentionCount: Int {
-        printers.filter { $0.status.isActionable }.count
+        printers.filter { printerNeedsUserAttention($0) }.count
     }
 
     public var overviewPrinters: [PrinterSnapshot] {
@@ -290,6 +294,70 @@ public final class AppModel {
         return statusFailureSummary(for: printer)
     }
 
+    public func printerStatusSummary(for printer: PrinterSnapshot) -> String {
+        if let failureSummary = statusFailureSummary(for: printer) {
+            return failureSummary
+        }
+
+        switch printer.status {
+        case .needsAttention:
+            return "Printer reported an error."
+        case .offline where statusUpdatedAtByPrinterID[printer.id] == nil:
+            return "Status not refreshed yet."
+        default:
+            return printer.status.rawValue
+        }
+    }
+
+    public func printJobIdleSummary(for printer: PrinterSnapshot) -> String {
+        if statusFailureSummary(for: printer) != nil {
+            return "Status unavailable."
+        }
+
+        switch printer.status {
+        case .ready:
+            return "Ready for a job."
+        case .offline:
+            return statusUpdatedAtByPrinterID[printer.id] == nil ? "Status not refreshed yet." : "Offline."
+        case .needsAttention:
+            return "Printer reported an error."
+        case .busy:
+            return "Printer is busy."
+        case .printing:
+            return "Printer reports printing, but no job details were returned."
+        case .paused:
+            return "Printer reports a paused job, but no job details were returned."
+        }
+    }
+
+    public func printerNeedsUserAttention(_ printer: PrinterSnapshot) -> Bool {
+        statusFailureSummary(for: printer) != nil || printer.status.isActionable
+    }
+
+    public func temperatureTelemetryItems(for printer: PrinterSnapshot) -> [TemperatureTelemetryItem] {
+        let toolheadItems = printer.toolheadTemperatures.map { toolhead in
+            TemperatureTelemetryItem(
+                id: toolhead.id,
+                title: toolhead.label,
+                reading: toolhead.reading,
+                history: temperatureHistory(for: printer.id, channelID: toolhead.id)
+            )
+        }
+
+        return toolheadItems + [
+            TemperatureTelemetryItem(
+                id: "bed",
+                title: "Bed",
+                reading: printer.bedTemperature,
+                history: temperatureHistory(for: printer.id, channelID: "bed")
+            )
+        ]
+    }
+
+    public func temperatureHistory(for printerID: UUID, channelID: String) -> [TemperatureHistoryPoint] {
+        temperatureHistoryByPrinterID[printerID]?[channelID] ?? []
+    }
+
     public var selectedPrinterActivityMessage: String? {
         guard selectedPrinter != nil else {
             return nil
@@ -300,7 +368,7 @@ public final class AppModel {
     }
 
     public func statusFailureSummary(for printer: PrinterSnapshot) -> String? {
-        statusFailureMessagesByPrinterID[printer.id]
+        identificationFailureMessagesByPrinterID[printer.id] ?? statusFailureMessagesByPrinterID[printer.id]
     }
 
     public var availableJobCommands: Set<PrinterJobCommand> {
@@ -418,7 +486,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Enter the printer check code to control this job."
+            return "Enter the printer access code in Printer Settings to control this job."
         }
 
         return nil
@@ -474,7 +542,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Enter the printer check code to upload a job."
+            return "Enter the printer access code in Printer Settings to upload a job."
         }
 
         guard doesUploadFileExist(fileURL) else {
@@ -498,7 +566,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Needs check code."
+            return "Needs printer access code."
         }
 
         return "Ready to refresh."
@@ -586,7 +654,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Enter the printer check code to refresh status."
+            return "Enter the printer access code in Printer Settings to refresh status."
         }
 
         return nil
@@ -670,7 +738,7 @@ public final class AppModel {
         }
 
         guard refreshablePrinterCount > 0 else {
-            return "Identify printers and save check codes before refreshing statuses."
+            return "Identify printers and save printer access codes before refreshing statuses."
         }
 
         return nil
@@ -877,7 +945,7 @@ public final class AppModel {
     }
 
     public var selectedPrinterRemovalConfirmationMessage: String {
-        "This removes the saved profile, check code, camera settings, and cached status from this app."
+        "This removes the saved profile, printer access code, camera settings, and cached status from this app."
     }
 
     public var canOpenJobFile: Bool {
@@ -1154,7 +1222,9 @@ public final class AppModel {
         printerInfoByPrinterID.removeValue(forKey: removedPrinterID)
         modernStatusesByPrinterID.removeValue(forKey: removedPrinterID)
         statusUpdatedAtByPrinterID.removeValue(forKey: removedPrinterID)
+        identificationFailureMessagesByPrinterID.removeValue(forKey: removedPrinterID)
         statusFailureMessagesByPrinterID.removeValue(forKey: removedPrinterID)
+        temperatureHistoryByPrinterID.removeValue(forKey: removedPrinterID)
         uploadFileURLsByPrinterID.removeValue(forKey: removedPrinterID)
         recentUploadFileURLsByPrinterID.removeValue(forKey: removedPrinterID)
         saveProfiles()
@@ -1184,7 +1254,7 @@ public final class AppModel {
 
         let trimmedCheckCode = checkCode.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedCheckCode.isEmpty else {
-            connectionMessage = "Enter the printer check code to upload a job."
+            connectionMessage = "Enter the printer access code in Printer Settings to upload a job."
             return
         }
 
@@ -1359,7 +1429,7 @@ public final class AppModel {
                 )
             }
         } else {
-            connectionMessage = selectedPrinterIdentificationFailureMessage(for: printer)
+            connectionMessage = printerIdentificationFailureMessage(for: printer)
         }
     }
 
@@ -1396,13 +1466,14 @@ public final class AppModel {
                 port: UInt16(printer.commandPort ?? 8899)
             )
             printerInfoByPrinterID[printer.id] = info
+            identificationFailureMessagesByPrinterID.removeValue(forKey: printer.id)
             merge(info: info, intoPrinterID: printer.id)
             if persists {
                 saveProfiles()
             }
             return true
         } catch {
-            printerInfoByPrinterID.removeValue(forKey: printer.id)
+            identificationFailureMessagesByPrinterID[printer.id] = printerIdentificationFailureSummary(for: printer)
             return false
         }
     }
@@ -1502,7 +1573,7 @@ public final class AppModel {
 
         guard let trimmedCheckCode = storedCheckCode(for: printer.id) else {
             if announcesProgress {
-                connectionMessage = "Enter the printer check code to refresh status."
+                connectionMessage = "Enter the printer access code in Printer Settings to refresh status."
             }
             return false
         }
@@ -1714,6 +1785,10 @@ public final class AppModel {
     }
 
     private func overviewPriority(for printer: PrinterSnapshot) -> Int {
+        if statusFailureSummary(for: printer) != nil {
+            return 0
+        }
+
         switch printer.status {
         case .needsAttention:
             return 0
@@ -1857,7 +1932,7 @@ public final class AppModel {
         case .httpStatus(let statusCode, let message):
             let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmedMessage.isEmpty {
-                return "Upload failed with HTTP \(statusCode). Check printer status, check code, and network."
+                return "Upload failed with HTTP \(statusCode). Check printer status, access code, and network."
             }
 
             return "Upload failed with HTTP \(statusCode): \(trimmedMessage)."
@@ -1866,7 +1941,7 @@ public final class AppModel {
         case .rejected(let message):
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedMessage.isEmpty {
-                return "Printer rejected the upload. Check the code and printer status."
+                return "Printer rejected the upload. Check the access code and printer status."
             }
 
             return "Printer rejected the upload: \(trimmedMessage)."
@@ -1879,10 +1954,10 @@ public final class AppModel {
         }
 
         if refreshedCount == 0 {
-            return "Could not refresh any printers. Check saved check codes and network."
+            return "Could not refresh any printers. Check saved printer access codes and network."
         }
 
-        return "Refreshed \(refreshedCount) of \(targetCount) printers. Check the remaining printers' codes and network."
+        return "Refreshed \(refreshedCount) of \(targetCount) printers. Check the remaining printers' access codes and network."
     }
 
     private func knownPrinterIdentificationSummary(identifiedCount: Int, targetCount: Int) -> String {
@@ -1891,10 +1966,10 @@ public final class AppModel {
         }
 
         if identifiedCount == 0 {
-            return "Could not identify any printers. Check that they are powered on and reachable on the local network."
+            return "Could not update printer identities. Check saved addresses and API ports."
         }
 
-        return "Identified \(identifiedCount) of \(targetCount) printers. Check the remaining printers' addresses and local network."
+        return "Identified \(identifiedCount) of \(targetCount) printers. Check the remaining printers' saved addresses and API ports."
     }
 
     private func discoverySummary(discoveredCount: Int, previousCount: Int, mergedCount: Int) -> String {
@@ -1913,14 +1988,18 @@ public final class AppModel {
         return "\(discoveredSummary) Kept \(savedSummary) that \(suffix) not discovered."
     }
 
-    private func selectedPrinterIdentificationFailureMessage(for printer: PrinterSnapshot) -> String {
-        let port = printer.commandPort.map { ":\($0)" } ?? ""
-        return "Could not identify \(printer.name) at \(printer.address)\(port). Check that the printer is powered on and reachable on the local network."
+    private func printerIdentificationFailureSummary(for printer: PrinterSnapshot) -> String {
+        let port = printer.commandPort ?? 8899
+        return "Could not update identity at \(printer.address):\(port). Check the printer address and API port."
+    }
+
+    private func printerIdentificationFailureMessage(for printer: PrinterSnapshot) -> String {
+        "\(printerIdentificationFailureSummary(for: printer)) Saved printer details are still available."
     }
 
     private func statusRefreshFailureSummary(for error: Error) -> String {
         guard let httpError = error as? ModernPrinterHTTPError else {
-            return "Last refresh failed. Check the check code and network."
+            return "Last refresh failed. Check the printer access code and network."
         }
 
         switch httpError {
@@ -1931,14 +2010,14 @@ public final class AppModel {
         case .httpStatus(let statusCode, let message):
             let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmedMessage.isEmpty {
-                return "Last refresh failed with HTTP \(statusCode). Check the check code and network."
+                return "Last refresh failed with HTTP \(statusCode). Check the printer access code and network."
             }
 
             return "Last refresh failed with HTTP \(statusCode): \(trimmedMessage)."
         case .printerRejectedRequest(let message):
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedMessage.isEmpty {
-                return "Last refresh rejected. Check the check code and printer status."
+                return "Last refresh rejected. Check the printer access code and printer status."
             }
 
             return "Last refresh rejected: \(trimmedMessage)."
@@ -1952,10 +2031,10 @@ public final class AppModel {
         let action = isBackground ? "Auto-refresh failed for" : "Could not refresh"
         guard let httpError = error as? ModernPrinterHTTPError else {
             if isBackground {
-                return "Auto-refresh failed for \(target). Check the check code and network."
+                return "Auto-refresh failed for \(target). Check the printer access code and network."
             }
 
-            return "Could not refresh \(target). Check the check code and network."
+            return "Could not refresh \(target). Check the printer access code and network."
         }
 
         switch httpError {
@@ -1966,14 +2045,14 @@ public final class AppModel {
         case .httpStatus(let statusCode, let message):
             let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmedMessage.isEmpty {
-                return "\(action) \(target). Printer returned HTTP \(statusCode). Check the check code and network."
+                return "\(action) \(target). Printer returned HTTP \(statusCode). Check the printer access code and network."
             }
 
             return "\(action) \(target). Printer returned HTTP \(statusCode): \(trimmedMessage)."
         case .printerRejectedRequest(let message):
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedMessage.isEmpty {
-                return "\(action) \(target). Printer rejected the refresh. Check the check code and printer status."
+                return "\(action) \(target). Printer rejected the refresh. Check the printer access code and printer status."
             }
 
             return "\(action) \(target). Printer rejected the refresh: \(trimmedMessage)."
@@ -1996,7 +2075,7 @@ public final class AppModel {
 
     private func jobCommandFailureMessage(for command: PrinterJobCommand, error: Error) -> String {
         guard let commandError = error as? ModernPrinterCommandError else {
-            return "Could not send \(command.rawValue). Check the code and network."
+            return "Could not send \(command.rawValue). Check the printer access code and network."
         }
 
         switch commandError {
@@ -2005,7 +2084,7 @@ public final class AppModel {
         case .httpStatus(let statusCode, let message):
             let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmedMessage.isEmpty {
-                return "Could not send \(command.rawValue). Printer returned HTTP \(statusCode). Check printer status, check code, and network."
+                return "Could not send \(command.rawValue). Printer returned HTTP \(statusCode). Check printer status, access code, and network."
             }
 
             return "Could not send \(command.rawValue). Printer returned HTTP \(statusCode): \(trimmedMessage)."
@@ -2062,6 +2141,7 @@ public final class AppModel {
             current: status.nozzleCurrent,
             target: status.nozzleTarget
         )
+        printers[index].toolheadTemperatures = status.toolheadTemperatures
         printers[index].bedTemperature = TemperatureReading(
             current: status.bedCurrent,
             target: status.bedTarget
@@ -2070,6 +2150,31 @@ public final class AppModel {
         printers[index].material = status.materialSnapshot
         printers[index].materialStation = status.materialStation
         printers[index].cameraState = status.cameraStreamURL.isEmpty && !status.isPro && !status.isAD5X ? .unavailable : .available
+        recordTemperatureHistory(for: printerID, status: status)
+    }
+
+    private func recordTemperatureHistory(for printerID: UUID, status: ModernPrinterStatus) {
+        let timestamp = Date()
+        var printerHistory = temperatureHistoryByPrinterID[printerID] ?? [:]
+        let channels = status.toolheadTemperatures.map { toolhead in
+            (id: toolhead.id, reading: toolhead.reading)
+        } + [
+            (id: "bed", reading: TemperatureReading(current: status.bedCurrent, target: status.bedTarget))
+        ]
+
+        for channel in channels {
+            var history = printerHistory[channel.id] ?? []
+            history.append(
+                TemperatureHistoryPoint(
+                    timestamp: timestamp,
+                    current: channel.reading.current,
+                    target: channel.reading.target
+                )
+            )
+            printerHistory[channel.id] = Array(history.suffix(60))
+        }
+
+        temperatureHistoryByPrinterID[printerID] = printerHistory
     }
 
     private func applyOptimisticState(for command: PrinterJobCommand, printerID: UUID) {

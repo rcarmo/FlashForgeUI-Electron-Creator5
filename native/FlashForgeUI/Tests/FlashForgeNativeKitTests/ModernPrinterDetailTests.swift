@@ -50,6 +50,13 @@ import Testing
     #expect(status.isAD5X == true)
     #expect(status.state == .printing)
     #expect(status.nozzleCurrent == 221)
+    #expect(status.toolheadTemperatures == [
+        ToolheadTemperature(
+            id: "nozzle",
+            label: "Nozzle",
+            reading: TemperatureReading(current: 221, target: 225)
+        )
+    ])
     #expect(status.bedTarget == 60)
     #expect(status.jobSnapshot?.fileName == "benchy.3mf")
     #expect(status.materialStation?.activeSlot == 2)
@@ -59,6 +66,38 @@ import Testing
     #expect(status.materialStation?.slots.first?.materialType == "PLA")
     #expect(status.materialStation?.slots.first?.materialColor == "#ff0000")
     #expect(status.materialStation?.slots.last?.isEmpty == true)
+}
+
+@Test func decodesMultipleToolheadTemperatures() throws {
+    let json = """
+    {
+      "name": "Creator 5 Pro",
+      "pid": 36,
+      "status": "ready",
+      "platTemp": "52",
+      "platTargetTemp": "60",
+      "leftTemp": "31",
+      "leftTargetTemp": "0",
+      "rightTemp": 216,
+      "rightTargetTemp": 220,
+      "tool3Temp": 42,
+      "tool3TargetTemp": 0,
+      "tool4Temp": 43,
+      "tool4TargetTemp": 0
+    }
+    """.data(using: .utf8)!
+
+    let detail = try JSONDecoder().decode(ModernPrinterDetail.self, from: json)
+    let status = detail.status
+
+    #expect(status.bedCurrent == 52)
+    #expect(status.bedTarget == 60)
+    #expect(status.toolheadTemperatures == [
+        ToolheadTemperature(id: "left", label: "Left Toolhead", reading: TemperatureReading(current: 31, target: 0)),
+        ToolheadTemperature(id: "right", label: "Right Toolhead", reading: TemperatureReading(current: 216, target: 220)),
+        ToolheadTemperature(id: "toolhead-3", label: "Toolhead 3", reading: TemperatureReading(current: 42, target: 0)),
+        ToolheadTemperature(id: "toolhead-4", label: "Toolhead 4", reading: TemperatureReading(current: 43, target: 0))
+    ])
 }
 
 @Test func fallsBackToMaterialStationWhenPidMissing() throws {

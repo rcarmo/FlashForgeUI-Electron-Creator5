@@ -119,8 +119,11 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
     public var rawStatus: String?
     public var platTemp: Double?
     public var platTargetTemp: Double?
+    public var leftTemp: Double?
+    public var leftTargetTemp: Double?
     public var rightTemp: Double?
     public var rightTargetTemp: Double?
+    public var extraTemperatureFields: [String: Double]
     public var printFileName: String?
     public var printProgress: Double?
     public var estimatedTime: Double?
@@ -137,6 +140,8 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
         case rawStatus = "status"
         case platTemp
         case platTargetTemp
+        case leftTemp
+        case leftTargetTemp
         case rightTemp
         case rightTargetTemp
         case printFileName
@@ -163,10 +168,13 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
         self.pid = try container.decodeIfPresent(Int.self, forKey: .pid)
             ?? container.decodeIfPresent(Int.self, forKey: .Pid)
         self.rawStatus = try container.decodeIfPresent(String.self, forKey: .rawStatus)
-        self.platTemp = try container.decodeIfPresent(Double.self, forKey: .platTemp)
-        self.platTargetTemp = try container.decodeIfPresent(Double.self, forKey: .platTargetTemp)
-        self.rightTemp = try container.decodeIfPresent(Double.self, forKey: .rightTemp)
-        self.rightTargetTemp = try container.decodeIfPresent(Double.self, forKey: .rightTargetTemp)
+        self.platTemp = try container.decodeFlexibleDoubleIfPresent(for: .platTemp)
+        self.platTargetTemp = try container.decodeFlexibleDoubleIfPresent(for: .platTargetTemp)
+        self.leftTemp = try container.decodeFlexibleDoubleIfPresent(for: .leftTemp)
+        self.leftTargetTemp = try container.decodeFlexibleDoubleIfPresent(for: .leftTargetTemp)
+        self.rightTemp = try container.decodeFlexibleDoubleIfPresent(for: .rightTemp)
+        self.rightTargetTemp = try container.decodeFlexibleDoubleIfPresent(for: .rightTargetTemp)
+        self.extraTemperatureFields = try Self.decodeExtraTemperatureFields(from: decoder)
         self.printFileName = try container.decodeIfPresent(String.self, forKey: .printFileName)
         self.printProgress = try container.decodeIfPresent(Double.self, forKey: .printProgress)
         self.estimatedTime = try container.decodeIfPresent(Double.self, forKey: .estimatedTime)
@@ -201,6 +209,7 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
             state: ModernPrinterState(rawDetailStatus: rawStatus ?? ""),
             nozzleCurrent: rightTemp ?? 0,
             nozzleTarget: rightTargetTemp ?? 0,
+            toolheadTemperatures: toolheadTemperatures,
             bedCurrent: platTemp ?? 0,
             bedTarget: platTargetTemp ?? 0,
             printFileName: printFileName ?? "",
@@ -211,6 +220,140 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
             cameraStreamURL: cameraStreamUrl ?? "",
             materialStation: matlStationInfo?.status
         )
+    }
+}
+
+private extension ModernPrinterDetail {
+    static func decodeExtraTemperatureFields(from decoder: Decoder) throws -> [String: Double] {
+        let container = try decoder.container(keyedBy: DynamicCodingKey.self)
+        var fields: [String: Double] = [:]
+
+        for key in container.allKeys where isToolheadTemperatureKey(key.stringValue) {
+            if let value = try container.decodeFlexibleDoubleIfPresent(for: key) {
+                fields[key.stringValue] = value
+            }
+        }
+
+        return fields
+    }
+
+    static func isToolheadTemperatureKey(_ key: String) -> Bool {
+        let lowercasedKey = key.lowercased()
+        guard lowercasedKey.contains("temp") else {
+            return false
+        }
+
+        let excludedFragments = ["bed", "plat", "platform", "chamber", "box", "estimated", "duration"]
+        guard !excludedFragments.contains(where: lowercasedKey.contains) else {
+            return false
+        }
+
+        return lowercasedKey.contains("tool")
+            || lowercasedKey.contains("nozzle")
+            || lowercasedKey.contains("extruder")
+            || lowercasedKey.contains("head")
+    }
+
+    var toolheadTemperatures: [ToolheadTemperature] {
+        let knownToolheads = [
+            decodedToolhead(id: "left", label: "Left Toolhead", currentKey: "leftTemp", targetKey: "leftTargetTemp"),
+            decodedToolhead(id: "right", label: "Right Toolhead", currentKey: "rightTemp", targetKey: "rightTargetTemp"),
+            decodedToolhead(id: "nozzle", label: "Nozzle", currentKey: "nozzleTemp", targetKey: "nozzleTargetTemp"),
+            decodedToolhead(id: "extruder", label: "Extruder", currentKey: "extruderTemp", targetKey: "extruderTargetTemp")
+        ].compactMap { $0 }
+
+        let numberedToolheads = [
+            decodedToolhead(
+                id: "toolhead-1",
+                label: "Toolhead 1",
+                currentKey: "tool0Temp",
+                targetKey: "tool0TargetTemp"
+            )
+        ].compactMap { $0 } + (1...4).compactMap { index in
+            decodedToolhead(
+                id: "toolhead-\(index)",
+                label: "Toolhead \(index)",
+                currentKey: "tool\(index)Temp",
+                targetKey: "tool\(index)TargetTemp"
+            )
+        }
+
+        let dedupedToolheads = (knownToolheads + numberedToolheads).reduce(into: [String: ToolheadTemperature]()) { result, toolhead in
+            result[toolhead.id] = toolhead
+        }
+
+        if !dedupedToolheads.isEmpty {
+            let sortedKeys = dedupedToolheads.keys.sorted()
+            let sortedToolheads = sortedKeys.compactMap { dedupedToolheads[$0] }
+            if sortedToolheads.count == 1, sortedToolheads[0].id == "right" {
+                return [
+                    ToolheadTemperature(
+                        id: "nozzle",
+                        label: "Nozzle",
+                        reading: sortedToolheads[0].reading
+                    )
+                ]
+            }
+            return sortedToolheads
+        }
+
+        return [
+            ToolheadTemperature(
+                id: "nozzle",
+                label: "Nozzle",
+                reading: TemperatureReading(current: rightTemp ?? 0, target: rightTargetTemp ?? 0)
+            )
+        ]
+    }
+
+    private func decodedToolhead(
+        id: String,
+        label: String,
+        currentKey: String,
+        targetKey: String
+    ) -> ToolheadTemperature? {
+        let current = dynamicNumber(for: currentKey)
+        let target = dynamicNumber(for: targetKey)
+
+        guard current != nil || target != nil else {
+            return nil
+        }
+
+        return ToolheadTemperature(
+            id: id,
+            label: label,
+            reading: TemperatureReading(current: current ?? 0, target: target)
+        )
+    }
+
+    private func dynamicNumber(for key: String) -> Double? {
+        switch key {
+        case "leftTemp":
+            return leftTemp
+        case "leftTargetTemp":
+            return leftTargetTemp
+        case "rightTemp":
+            return rightTemp
+        case "rightTargetTemp":
+            return rightTargetTemp
+        default:
+            return extraTemperatureFields[key]
+        }
+    }
+}
+
+private struct DynamicCodingKey: CodingKey {
+    var stringValue: String
+    var intValue: Int?
+
+    init?(stringValue: String) {
+        self.stringValue = stringValue
+        self.intValue = nil
+    }
+
+    init?(intValue: Int) {
+        self.stringValue = String(intValue)
+        self.intValue = intValue
     }
 }
 
@@ -356,6 +499,19 @@ public struct MaterialSlotInfo: Decodable, Equatable, Sendable {
 }
 
 private extension KeyedDecodingContainer {
+    func decodeFlexibleDoubleIfPresent(for key: Key) throws -> Double? {
+        if let value = try? decodeIfPresent(Double.self, forKey: key) {
+            return value
+        }
+        if let value = try? decodeIfPresent(Int.self, forKey: key) {
+            return Double(value)
+        }
+        if let value = try? decodeIfPresent(String.self, forKey: key) {
+            return Double(value.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        return nil
+    }
+
     func decodeFlexibleInt(
         for key: Key,
         alternative: Key,

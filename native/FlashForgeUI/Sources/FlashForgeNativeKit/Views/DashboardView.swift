@@ -148,7 +148,7 @@ public struct DashboardView: View {
             MetricCard(title: "Identified", value: "\(model.identifiedPrinterCount)", symbol: "number")
             MetricCard(title: "Refreshable", value: "\(model.refreshablePrinterCount)", symbol: "checkmark.seal")
             MetricCard(title: "Printing", value: "\(model.activePrintCount)", symbol: "play.circle")
-            MetricCard(title: "Needs Attention", value: "\(model.attentionCount)", symbol: "exclamationmark.triangle")
+            MetricCard(title: "Issues", value: "\(model.attentionCount)", symbol: "exclamationmark.triangle")
         }
     }
 

@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct SidebarView: View {
     @State private var printerSearchText = ""
+    @State private var showsForgetPrinterConfirmation = false
     @Bindable private var model: AppModel
     private let onAddPrinter: () -> Void
     private let onShowSettings: () -> Void
@@ -29,14 +30,43 @@ public struct SidebarView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(filteredPrinters) { printer in
-                        PrinterSidebarRow(printer: printer)
+                        PrinterSidebarRow(
+                            printer: printer,
+                            statusSummary: model.printerStatusSummary(for: printer),
+                            needsUserAttention: model.printerNeedsUserAttention(printer)
+                        )
                             .tag(AppSelection.printer(printer.id))
+                            .contextMenu {
+                                Button("Forget Printer...", role: .destructive) {
+                                    model.selection = .printer(printer.id)
+                                    showsForgetPrinterConfirmation = true
+                                }
+                            }
                     }
                 }
             }
         }
         .navigationTitle("FlashForgeUI")
         .searchable(text: $printerSearchText, prompt: "Search Printers")
+        .onDeleteCommand {
+            guard model.canRemoveSelectedPrinter else {
+                return
+            }
+            showsForgetPrinterConfirmation = true
+        }
+        .confirmationDialog(
+            model.selectedPrinterRemovalConfirmationTitle,
+            isPresented: $showsForgetPrinterConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Forget Printer", role: .destructive) {
+                model.removeSelectedPrinter()
+            }
+
+            Button("Keep Printer", role: .cancel) {}
+        } message: {
+            Text(model.selectedPrinterRemovalConfirmationMessage)
+        }
         .toolbar {
             ToolbarItem {
                 Button {
@@ -89,15 +119,18 @@ public struct SidebarView: View {
 
 private struct PrinterSidebarRow: View {
     let printer: PrinterSnapshot
+    let statusSummary: String
+    let needsUserAttention: Bool
 
     var body: some View {
         Label {
             VStack(alignment: .leading, spacing: 2) {
                 Text(printer.name)
                     .lineLimit(1)
-                Text(printer.status.rawValue)
+                Text(statusSummary)
                     .font(.caption)
-                    .foregroundStyle(printer.status.isActionable ? .orange : .secondary)
+                    .foregroundStyle(needsUserAttention ? .orange : .secondary)
+                    .lineLimit(2)
             }
         } icon: {
             Image(systemName: "printer")

@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -164,9 +165,7 @@ public struct PrinterDetailView: View {
                     .foregroundStyle(.secondary)
             }
             if let failureSummary = model.selectedPrinterStatusFailureSummary {
-                Label(failureSummary, systemImage: "exclamationmark.triangle")
-                    .font(.callout)
-                    .foregroundStyle(.orange)
+                actionableMessage(failureSummary, systemImage: "exclamationmark.triangle", isWarning: true)
             }
             if let connectReadinessMessage = model.selectedPrinterConnectReadinessMessage {
                 Label(connectReadinessMessage, systemImage: "info.circle")
@@ -214,7 +213,7 @@ public struct PrinterDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("No Active Print")
                     .font(.title2.weight(.semibold))
-                Text(printer.status.rawValue)
+                Text(model.printJobIdleSummary(for: printer))
                     .foregroundStyle(.secondary)
                 if let pendingJobSummary = model.selectedPendingJobSummary {
                     Label(pendingJobSummary, systemImage: "doc.text")
@@ -303,19 +302,55 @@ public struct PrinterDetailView: View {
             }
 
             if let refreshReadinessMessage = model.selectedPrinterStatusRefreshReadinessMessage {
-                Label(refreshReadinessMessage, systemImage: "info.circle")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                actionableMessage(refreshReadinessMessage, systemImage: "info.circle")
             }
 
             uploadDropZone
 
             if let uploadReadinessMessage = model.selectedUploadReadinessMessage {
-                Label(uploadReadinessMessage, systemImage: "info.circle")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                actionableMessage(uploadReadinessMessage, systemImage: "info.circle")
             }
         }
+    }
+
+    private func actionableMessage(
+        _ message: String,
+        systemImage: String,
+        isWarning: Bool = false
+    ) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Label(message, systemImage: systemImage)
+                    .font(.callout)
+                    .foregroundStyle(isWarning ? .orange : .secondary)
+                if shouldOfferPrinterSettings(for: message) {
+                    Button("Printer Settings...") {
+                        onShowSettings()
+                    }
+                    .controlSize(.small)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Label(message, systemImage: systemImage)
+                    .font(.callout)
+                    .foregroundStyle(isWarning ? .orange : .secondary)
+                if shouldOfferPrinterSettings(for: message) {
+                    Button("Printer Settings...") {
+                        onShowSettings()
+                    }
+                    .controlSize(.small)
+                }
+            }
+        }
+    }
+
+    private func shouldOfferPrinterSettings(for message: String) -> Bool {
+        let normalizedMessage = message.lowercased()
+        return normalizedMessage.contains("access code")
+            || normalizedMessage.contains("api port")
+            || normalizedMessage.contains("printer address")
+            || normalizedMessage.contains("serial number")
     }
 
     private var refreshButton: some View {
@@ -525,8 +560,8 @@ public struct PrinterDetailView: View {
                 .font(.title2.weight(.semibold))
 
             LazyVGrid(columns: telemetryColumns, alignment: .leading, spacing: 12) {
-                ForEach(coreTelemetryItems) { item in
-                    TelemetryTile(title: item.title, value: item.value)
+                ForEach(model.temperatureTelemetryItems(for: printer)) { item in
+                    TemperatureTelemetryTile(item: item)
                 }
             }
 
@@ -550,12 +585,8 @@ public struct PrinterDetailView: View {
         [GridItem(.adaptive(minimum: 160), spacing: 12)]
     }
 
-    private var coreTelemetryItems: [TelemetryItem] {
-        var items = [
-            TelemetryItem(title: "Nozzle", value: NativeFormatters.temperature(printer.nozzleTemperature)),
-            TelemetryItem(title: "Bed", value: NativeFormatters.temperature(printer.bedTemperature))
-        ]
-
+    private var printerDetailItems: [TelemetryItem] {
+        var items: [TelemetryItem] = []
         if let material = printer.material {
             items.append(contentsOf: [
                 TelemetryItem(title: "Material", value: material.name),
@@ -566,12 +597,6 @@ public struct PrinterDetailView: View {
                 TelemetryItem(title: "Color", value: material.colorHex)
             ])
         }
-
-        return items
-    }
-
-    private var printerDetailItems: [TelemetryItem] {
-        var items: [TelemetryItem] = []
 
         if let info = model.lastPrinterInfo {
             items.append(contentsOf: [
@@ -785,5 +810,72 @@ private struct TelemetryTile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct TemperatureTelemetryTile: View {
+    let item: TemperatureTelemetryItem
+
+    var body: some View {
+        ZStack {
+            temperatureChart
+                .opacity(0.35)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(item.title)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Text(NativeFormatters.temperature(item.reading))
+                    .font(.title3.weight(.semibold))
+                    .lineLimit(1)
+                if item.history.isEmpty {
+                    Text("Waiting for samples")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+        }
+        .frame(minHeight: 92)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private var temperatureChart: some View {
+        if !item.history.isEmpty {
+            Chart {
+                ForEach(item.history) { point in
+                    LineMark(
+                        x: .value("Time", point.timestamp),
+                        y: .value("Current", point.current)
+                    )
+                    .interpolationMethod(.catmullRom)
+
+                    PointMark(
+                        x: .value("Time", point.timestamp),
+                        y: .value("Current", point.current)
+                    )
+
+                    if let target = point.target, target > 0 {
+                        LineMark(
+                            x: .value("Time", point.timestamp),
+                            y: .value("Target", target)
+                        )
+                        .foregroundStyle(.secondary.opacity(0.65))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    }
+                }
+            }
+            .chartXAxis(.hidden)
+            .chartYAxis(.hidden)
+            .chartLegend(.hidden)
+        } else {
+            Color.clear
+        }
     }
 }

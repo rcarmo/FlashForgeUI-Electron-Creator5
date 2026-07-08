@@ -94,11 +94,11 @@ public struct SettingsView: View {
 
             if model.selectedPrinter != nil {
                 Section("Connection") {
-                    SecureField("Check code", text: $model.checkCode)
+                    SecureField("Printer access code", text: $model.checkCode)
                         .textFieldStyle(.roundedBorder)
                         .disabled(model.selectedPrinterProfileChangeReadinessMessage != nil)
 
-                    Button("Forget Check Code") {
+                    Button("Forget Access Code") {
                         model.clearSelectedPrinterCheckCode()
                     }
                     .disabled(!model.canClearSelectedPrinterCheckCode)

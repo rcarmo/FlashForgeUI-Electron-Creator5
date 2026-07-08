@@ -183,7 +183,7 @@ import Testing
     #expect(model.checkCode == "654321")
     #expect(model.hasSelectedPrinterCheckCode == true)
     #expect(model.canClearSelectedPrinterCheckCode == true)
-    #expect(model.selectedPrinterCheckCodeStatusMessage == "Check code saved for this printer.")
+    #expect(model.selectedPrinterCheckCodeStatusMessage == "Printer access code saved.")
     #expect(model.customCameraEnabled == true)
     #expect(model.customCameraURL == "http://camera.local:8080/?action=stream")
     #expect(model.selectedCameraStreamConfig.sourceType == .custom)
@@ -195,7 +195,7 @@ import Testing
     #expect(model.canClearSelectedPrinterCheckCode == false)
     #expect(model.selectedPrinterCheckCodeStatusMessage == "Needed for refresh, upload, and job controls.")
     #expect(store.document.profiles.first?.checkCode == nil)
-    #expect(model.connectionMessage == "Check code cleared for this printer.")
+    #expect(model.connectionMessage == "Printer access code cleared.")
 }
 
 @MainActor
@@ -344,12 +344,12 @@ import Testing
 
     #expect(model.connectKnownPrintersReadinessMessage == nil)
     #expect(model.canConnectKnownPrinters == true)
-    #expect(model.refreshKnownPrinterStatusesReadinessMessage == "Identify printers and save check codes before refreshing statuses.")
+    #expect(model.refreshKnownPrinterStatusesReadinessMessage == "Identify printers and save printer access codes before refreshing statuses.")
     #expect(model.canRefreshKnownPrinterStatuses == false)
 
     let refreshedCount = await model.refreshKnownPrinterStatuses()
     #expect(refreshedCount == 0)
-    #expect(model.connectionMessage == "Identify printers and save check codes before refreshing statuses.")
+    #expect(model.connectionMessage == "Identify printers and save printer access codes before refreshing statuses.")
 }
 
 @MainActor
@@ -890,7 +890,7 @@ import Testing
     let removedID = model.selectedPrinter?.id
 
     #expect(model.selectedPrinterRemovalConfirmationTitle == "Forget Second?")
-    #expect(model.selectedPrinterRemovalConfirmationMessage == "This removes the saved profile, check code, camera settings, and cached status from this app.")
+    #expect(model.selectedPrinterRemovalConfirmationMessage == "This removes the saved profile, printer access code, camera settings, and cached status from this app.")
     model.removeSelectedPrinter()
 
     #expect(model.printers.count == 1)
@@ -1005,7 +1005,11 @@ import Testing
     #expect(bootstrapClient.requestedHosts == ["192.168.1.44"])
     #expect(model.lastPrinterInfo == nil)
     #expect(model.selectedPrinter?.serialNumber == nil)
-    #expect(model.connectionMessage == "Could not identify Desk Printer at 192.168.1.44:8899. Check that the printer is powered on and reachable on the local network.")
+    #expect(model.connectionMessage == "Could not update identity at 192.168.1.44:8899. Check the printer address and API port. Saved printer details are still available.")
+    #expect(model.selectedPrinter?.status == .offline)
+    #expect(model.selectedPrinterStatusFailureSummary == "Could not update identity at 192.168.1.44:8899. Check the printer address and API port.")
+    #expect(model.printerStatusSummary(for: model.printers[0]) == "Could not update identity at 192.168.1.44:8899. Check the printer address and API port.")
+    #expect(model.printerNeedsUserAttention(model.printers[0]) == true)
     #expect(model.isConnecting == false)
 }
 
@@ -1120,7 +1124,7 @@ import Testing
     #expect(model.identifiedPrinterCount == 1)
     #expect(model.printers.first { $0.id == firstID }?.serialNumber == "SN-FIRST")
     #expect(model.printers.first { $0.id == secondID }?.serialNumber == nil)
-    #expect(model.connectionMessage == "Identified 1 of 2 printers. Check the remaining printers' addresses and local network.")
+    #expect(model.connectionMessage == "Identified 1 of 2 printers. Check the remaining printers' saved addresses and API ports.")
 }
 
 @MainActor
@@ -1163,7 +1167,7 @@ import Testing
     #expect(identifiedCount == 0)
     #expect(bootstrapClient.requestedHosts == ["192.168.1.44", "192.168.1.45"])
     #expect(model.identifiedPrinterCount == 0)
-    #expect(model.connectionMessage == "Could not identify any printers. Check that they are powered on and reachable on the local network.")
+    #expect(model.connectionMessage == "Could not update printer identities. Check saved addresses and API ports.")
     #expect(model.isConnectingKnownPrinters == false)
 }
 
@@ -1198,6 +1202,20 @@ import Testing
     #expect(model.selectedPrinter?.model == "AD5X")
     #expect(model.selectedPrinter?.status == .printing)
     #expect(model.selectedPrinter?.nozzleTemperature.current == 221)
+    #expect(model.selectedPrinter?.toolheadTemperatures.map(\.label) == [
+        "Left Toolhead",
+        "Right Toolhead",
+        "Toolhead 3",
+        "Toolhead 4"
+    ])
+    #expect(model.temperatureTelemetryItems(for: model.printers[0]).map(\.title) == [
+        "Left Toolhead",
+        "Right Toolhead",
+        "Toolhead 3",
+        "Toolhead 4",
+        "Bed"
+    ])
+    #expect(model.temperatureTelemetryItems(for: model.printers[0]).allSatisfy { $0.history.count == 1 })
     #expect(model.selectedPrinter?.activeJob?.fileName == "benchy.3mf")
     #expect(model.selectedPrinter?.materialStation?.activeSlot == 1)
     #expect(model.selectedPrinter?.materialStation?.slots.first?.materialType == "PLA")
@@ -1306,7 +1324,7 @@ import Testing
     model.selection = .printer(printer.id)
     model.connectionMessage = "Standing by."
 
-    #expect(model.selectedPrinterStatusRefreshReadinessMessage == "Enter the printer check code to refresh status.")
+    #expect(model.selectedPrinterStatusRefreshReadinessMessage == "Enter the printer access code in Printer Settings to refresh status.")
     #expect(model.canRefreshSelectedPrinterStatus == false)
 
     let didRefresh = await model.refreshSelectedPrinterStatusInBackground()
@@ -1343,7 +1361,7 @@ import Testing
         printers: [identifiedPrinter, unidentifiedPrinter]
     )
 
-    #expect(model.statusRefreshContextMessage(for: identifiedPrinter) == "Needs check code.")
+    #expect(model.statusRefreshContextMessage(for: identifiedPrinter) == "Needs printer access code.")
     #expect(model.canRefreshStatus(for: identifiedPrinter) == false)
     #expect(model.statusRefreshContextMessage(for: unidentifiedPrinter) == "Identify printer first.")
     #expect(model.canRefreshStatus(for: unidentifiedPrinter) == false)
@@ -1414,8 +1432,8 @@ import Testing
 
     #expect(didRefresh == false)
     #expect(client.requestCount == 1)
-    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the check code and network.")
-    #expect(model.connectionMessage == "Could not refresh Desk Printer at 192.168.1.44. Check the check code and network.")
+    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the printer access code and network.")
+    #expect(model.connectionMessage == "Could not refresh Desk Printer at 192.168.1.44. Check the printer access code and network.")
     #expect(model.isRefreshingStatus == false)
 }
 
@@ -1504,7 +1522,7 @@ import Testing
     let failedRefresh = await model.refreshSelectedPrinterStatus()
 
     #expect(failedRefresh == false)
-    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the check code and network.")
+    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the printer access code and network.")
 
     let successfulRefresh = await model.refreshSelectedPrinterStatus()
 
@@ -1603,9 +1621,9 @@ import Testing
 
     #expect(refreshedCount == 0)
     #expect(client.requestCount == 2)
-    #expect(model.statusFailureSummary(for: model.printers[0]) == "Last refresh failed. Check the check code and network.")
-    #expect(model.statusFailureSummary(for: model.printers[1]) == "Last refresh failed. Check the check code and network.")
-    #expect(model.connectionMessage == "Could not refresh any printers. Check saved check codes and network.")
+    #expect(model.statusFailureSummary(for: model.printers[0]) == "Last refresh failed. Check the printer access code and network.")
+    #expect(model.statusFailureSummary(for: model.printers[1]) == "Last refresh failed. Check the printer access code and network.")
+    #expect(model.connectionMessage == "Could not refresh any printers. Check saved printer access codes and network.")
     #expect(model.isRefreshingAllStatuses == false)
 }
 
@@ -2176,13 +2194,13 @@ import Testing
 
     #expect(model.hasSelectedPrinterCheckCode == false)
     #expect(model.selectedPrinterCheckCodeStatusMessage == "Needed for refresh, upload, and job controls.")
-    #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == "Enter the printer check code to control this job.")
+    #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == "Enter the printer access code in Printer Settings to control this job.")
     #expect(model.canSendSelectedPrinterJobCommand(.pause) == false)
 
     await model.sendSelectedPrinterJobCommand(.pause)
 
     #expect(commandClient.lastCommand == nil)
-    #expect(model.connectionMessage == "Enter the printer check code to control this job.")
+    #expect(model.connectionMessage == "Enter the printer access code in Printer Settings to control this job.")
 }
 
 @MainActor
@@ -2532,7 +2550,7 @@ import Testing
     #expect(model.canChangeSelectedUploadOptions == true)
     #expect(model.selectedUploadOptionChangeReadinessMessage == nil)
     #expect(model.canClearSelectedUploadFile == true)
-    #expect(model.selectedUploadReadinessMessage == "Enter the printer check code to upload a job.")
+    #expect(model.selectedUploadReadinessMessage == "Enter the printer access code in Printer Settings to upload a job.")
     #expect(model.canUploadSelectedJob == false)
 
     model.levelingBeforePrint = false
@@ -3002,6 +3020,12 @@ private struct FakeModernClient: ModernPrinterHTTPClient {
             state: .printing,
             nozzleCurrent: 221,
             nozzleTarget: 225,
+            toolheadTemperatures: [
+                ToolheadTemperature(id: "left", label: "Left Toolhead", reading: TemperatureReading(current: 31, target: 0)),
+                ToolheadTemperature(id: "right", label: "Right Toolhead", reading: TemperatureReading(current: 221, target: 225)),
+                ToolheadTemperature(id: "toolhead-3", label: "Toolhead 3", reading: TemperatureReading(current: 33, target: 0)),
+                ToolheadTemperature(id: "toolhead-4", label: "Toolhead 4", reading: TemperatureReading(current: 34, target: 0))
+            ],
             bedCurrent: 58,
             bedTarget: 60,
             printFileName: "benchy.3mf",

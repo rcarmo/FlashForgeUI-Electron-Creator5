@@ -9,6 +9,7 @@ public struct ModernPrinterStatus: Equatable, Sendable {
     public var state: ModernPrinterState
     public var nozzleCurrent: Double
     public var nozzleTarget: Double
+    public var toolheadTemperatures: [ToolheadTemperature]
     public var bedCurrent: Double
     public var bedTarget: Double
     public var printFileName: String
@@ -28,6 +29,7 @@ public struct ModernPrinterStatus: Equatable, Sendable {
         state: ModernPrinterState,
         nozzleCurrent: Double,
         nozzleTarget: Double,
+        toolheadTemperatures: [ToolheadTemperature]? = nil,
         bedCurrent: Double,
         bedTarget: Double,
         printFileName: String = "",
@@ -46,6 +48,13 @@ public struct ModernPrinterStatus: Equatable, Sendable {
         self.state = state
         self.nozzleCurrent = nozzleCurrent
         self.nozzleTarget = nozzleTarget
+        self.toolheadTemperatures = toolheadTemperatures ?? [
+            ToolheadTemperature(
+                id: "nozzle",
+                label: "Nozzle",
+                reading: TemperatureReading(current: nozzleCurrent, target: nozzleTarget)
+            )
+        ]
         self.bedCurrent = bedCurrent
         self.bedTarget = bedTarget
         self.printFileName = printFileName

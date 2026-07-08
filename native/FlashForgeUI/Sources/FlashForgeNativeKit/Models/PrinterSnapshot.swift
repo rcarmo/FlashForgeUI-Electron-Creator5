@@ -12,6 +12,7 @@ public struct PrinterSnapshot: Identifiable, Hashable, Codable, Sendable {
     public var status: PrinterStatus
     public var nozzleTemperature: TemperatureReading
     public var bedTemperature: TemperatureReading
+    public var toolheadTemperatures: [ToolheadTemperature]
     public var activeJob: PrintJobSnapshot?
     public var material: MaterialSnapshot?
     public var materialStation: MaterialStationStatus?
@@ -29,6 +30,7 @@ public struct PrinterSnapshot: Identifiable, Hashable, Codable, Sendable {
         status: PrinterStatus,
         nozzleTemperature: TemperatureReading,
         bedTemperature: TemperatureReading,
+        toolheadTemperatures: [ToolheadTemperature]? = nil,
         activeJob: PrintJobSnapshot? = nil,
         material: MaterialSnapshot? = nil,
         materialStation: MaterialStationStatus? = nil,
@@ -45,6 +47,9 @@ public struct PrinterSnapshot: Identifiable, Hashable, Codable, Sendable {
         self.status = status
         self.nozzleTemperature = nozzleTemperature
         self.bedTemperature = bedTemperature
+        self.toolheadTemperatures = toolheadTemperatures ?? [
+            ToolheadTemperature(id: "nozzle", label: "Nozzle", reading: nozzleTemperature)
+        ]
         self.activeJob = activeJob
         self.material = material
         self.materialStation = materialStation
@@ -84,6 +89,50 @@ public struct TemperatureReading: Hashable, Codable, Sendable {
     public init(current: Double, target: Double? = nil) {
         self.current = current
         self.target = target
+    }
+}
+
+public struct ToolheadTemperature: Identifiable, Hashable, Codable, Sendable {
+    public var id: String
+    public var label: String
+    public var reading: TemperatureReading
+
+    public init(id: String, label: String, reading: TemperatureReading) {
+        self.id = id
+        self.label = label
+        self.reading = reading
+    }
+}
+
+public struct TemperatureHistoryPoint: Identifiable, Hashable, Sendable {
+    public var id: Date { timestamp }
+    public var timestamp: Date
+    public var current: Double
+    public var target: Double?
+
+    public init(timestamp: Date, current: Double, target: Double? = nil) {
+        self.timestamp = timestamp
+        self.current = current
+        self.target = target
+    }
+}
+
+public struct TemperatureTelemetryItem: Identifiable, Hashable, Sendable {
+    public var id: String
+    public var title: String
+    public var reading: TemperatureReading
+    public var history: [TemperatureHistoryPoint]
+
+    public init(
+        id: String,
+        title: String,
+        reading: TemperatureReading,
+        history: [TemperatureHistoryPoint] = []
+    ) {
+        self.id = id
+        self.title = title
+        self.reading = reading
+        self.history = history
     }
 }
 
