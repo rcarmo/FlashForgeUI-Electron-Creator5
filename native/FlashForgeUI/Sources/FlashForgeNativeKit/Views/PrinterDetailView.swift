@@ -30,7 +30,10 @@ public struct PrinterDetailView: View {
                     MaterialStationView(station: materialStation)
                 }
                 controlsSection
-                CameraPreviewView(config: model.selectedCameraStreamConfig) { _ in
+                CameraPreviewView(
+                    config: model.selectedCameraStreamConfig,
+                    recoveryReadiness: cameraRecoveryReadinessMessage(for:)
+                ) { _ in
                     model.acknowledgeCameraOpen()
                 } onRecover: { recoveryAction in
                     handleCameraRecovery(recoveryAction)
@@ -652,6 +655,15 @@ public struct PrinterDetailView: View {
             Task { await model.refreshSelectedPrinterStatus() }
         case .openSettings:
             onShowSettings()
+        }
+    }
+
+    private func cameraRecoveryReadinessMessage(for recoveryAction: CameraRecoveryAction) -> String? {
+        switch recoveryAction {
+        case .refreshStatus:
+            model.selectedPrinterStatusRefreshReadinessMessage
+        case .openSettings:
+            nil
         }
     }
 }

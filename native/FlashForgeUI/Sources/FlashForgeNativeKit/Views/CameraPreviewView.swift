@@ -4,15 +4,18 @@ public struct CameraPreviewView: View {
     @Environment(\.openURL) private var openURL
 
     private let config: CameraStreamConfig
+    private let recoveryReadiness: (CameraRecoveryAction) -> String?
     private let onOpenStream: (URL) -> Void
     private let onRecover: (CameraRecoveryAction) -> Void
 
     public init(
         config: CameraStreamConfig,
+        recoveryReadiness: @escaping (CameraRecoveryAction) -> String? = { _ in nil },
         onOpenStream: @escaping (URL) -> Void = { _ in },
         onRecover: @escaping (CameraRecoveryAction) -> Void = { _ in }
     ) {
         self.config = config
+        self.recoveryReadiness = recoveryReadiness
         self.onOpenStream = onOpenStream
         self.onRecover = onRecover
     }
@@ -82,12 +85,22 @@ public struct CameraPreviewView: View {
                     .multilineTextAlignment(.center)
             }
             ForEach(config.recoveryActions, id: \.self) { recoveryAction in
-                Button {
-                    onRecover(recoveryAction)
-                } label: {
-                    Label(recoveryAction.label, systemImage: recoveryAction.systemImage)
+                VStack(spacing: 6) {
+                    Button {
+                        onRecover(recoveryAction)
+                    } label: {
+                        Label(recoveryAction.label, systemImage: recoveryAction.systemImage)
+                    }
+                    .controlSize(.large)
+                    .disabled(recoveryReadinessMessage(for: recoveryAction) != nil)
+
+                    if let readinessMessage = recoveryReadinessMessage(for: recoveryAction) {
+                        Label(readinessMessage, systemImage: "info.circle")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
                 }
-                .controlSize(.large)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -119,6 +132,11 @@ public struct CameraPreviewView: View {
     private func open(_ streamURL: URL) {
         openURL(streamURL)
         onOpenStream(streamURL)
+    }
+
+    private func recoveryReadinessMessage(for recoveryAction: CameraRecoveryAction) -> String? {
+        let message = recoveryReadiness(recoveryAction)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return message.isEmpty ? nil : message
     }
 
     private func streamBadge(streamURL: URL) -> some View {
