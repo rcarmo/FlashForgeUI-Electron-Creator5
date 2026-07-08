@@ -5,6 +5,8 @@ MODE="${1:---record}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="FlashForgeUI"
 APP_BUNDLE="$ROOT_DIR/dist/$APP_NAME.app"
+APP_BINARY="$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+INFO_PLIST="$APP_BUNDLE/Contents/Info.plist"
 SMOKE_DIR="$ROOT_DIR/dist/smoke"
 
 commit_sha() {
@@ -13,6 +15,33 @@ commit_sha() {
 
 build_stamp() {
   date +"%Y-%m-%d %H:%M:%S %Z"
+}
+
+plist_value() {
+  /usr/libexec/PlistBuddy -c "Print :$1" "$INFO_PLIST"
+}
+
+macos_version() {
+  sw_vers -productVersion
+}
+
+validate_packaged_app() {
+  if [[ ! -d "$APP_BUNDLE" ]]; then
+    echo "Packaged app not found at $APP_BUNDLE. Run ./script/package_app.sh first." >&2
+    exit 3
+  fi
+
+  if [[ ! -x "$APP_BINARY" ]]; then
+    echo "App executable not found or not executable at $APP_BINARY." >&2
+    exit 3
+  fi
+
+  if [[ ! -f "$INFO_PLIST" ]]; then
+    echo "Info.plist not found at $INFO_PLIST." >&2
+    exit 3
+  fi
+
+  /usr/bin/plutil -lint "$INFO_PLIST" >/dev/null
 }
 
 print_checklist() {
@@ -81,6 +110,7 @@ CHECKLIST
 }
 
 record_checklist() {
+  validate_packaged_app
   mkdir -p "$SMOKE_DIR"
   local report_path="$SMOKE_DIR/mac-beta-smoke-$(date +"%Y%m%d-%H%M%S").md"
   {
@@ -89,6 +119,9 @@ record_checklist() {
     echo "- Created: $(build_stamp)"
     echo "- Commit: $(commit_sha)"
     echo "- App bundle: $APP_BUNDLE"
+    echo "- Bundle identifier: $(plist_value CFBundleIdentifier)"
+    echo "- App version: $(plist_value CFBundleShortVersionString) ($(plist_value CFBundleVersion))"
+    echo "- macOS version: $(macos_version)"
     echo
     print_checklist | sed '1,2d'
   } >"$report_path"
