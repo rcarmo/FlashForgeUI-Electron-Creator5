@@ -105,7 +105,7 @@ public struct DashboardView: View {
             Label(model.isDiscovering ? "Discovering" : "Discover Printers", systemImage: "arrow.clockwise")
         }
         .controlSize(.large)
-        .disabled(model.isDiscovering)
+        .disabled(!model.canDiscoverPrinters)
     }
 
     private var identifyButton: some View {
@@ -129,8 +129,8 @@ public struct DashboardView: View {
     }
 
     private var actionReadinessMessage: String? {
-        if model.isDiscovering {
-            return "Discovery in progress."
+        if let discoveryReadinessMessage = model.discoverPrintersReadinessMessage {
+            return discoveryReadinessMessage
         }
 
         if model.printers.isEmpty {

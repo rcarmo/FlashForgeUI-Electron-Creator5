@@ -328,6 +328,42 @@ public final class AppModel {
         selectedPrinterJobCommandReadinessMessage(for: command) == nil
     }
 
+    public var canDiscoverPrinters: Bool {
+        discoverPrintersReadinessMessage == nil
+    }
+
+    public var discoverPrintersReadinessMessage: String? {
+        if isDiscovering {
+            return "Discovery in progress."
+        }
+
+        if isConnecting {
+            return "Connecting to the selected printer."
+        }
+
+        if isConnectingKnownPrinters {
+            return "Identifying printers."
+        }
+
+        if isRefreshingStatus {
+            return "Refreshing the selected printer."
+        }
+
+        if isRefreshingAllStatuses {
+            return "Refreshing printer statuses."
+        }
+
+        if isUploadingJob {
+            return "Upload in progress."
+        }
+
+        if isSendingJobCommand {
+            return "Sending job command."
+        }
+
+        return nil
+    }
+
     public func selectedPrinterJobCommandReadinessMessage(for command: PrinterJobCommand) -> String? {
         if isSendingJobCommand {
             return activeJobCommand == command ? "Sending \(command.rawValue)." : "Sending another job command."
@@ -1114,8 +1150,8 @@ public final class AppModel {
     }
 
     public func discoverPrinters() async {
-        guard !isDiscovering else {
-            connectionMessage = "Discovery in progress."
+        if let readinessMessage = discoverPrintersReadinessMessage {
+            connectionMessage = readinessMessage
             return
         }
 

@@ -53,7 +53,7 @@ public struct SidebarView: View {
                 } label: {
                     Label("Discover", systemImage: "arrow.clockwise")
                 }
-                .disabled(model.isDiscovering)
+                .disabled(!model.canDiscoverPrinters)
                 .help("Discover printers")
             }
 

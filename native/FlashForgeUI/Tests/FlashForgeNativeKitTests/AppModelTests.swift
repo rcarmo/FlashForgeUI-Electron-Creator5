@@ -50,6 +50,8 @@ import Testing
     await model.discoverPrinters()
 
     #expect(service.requestCount == 0)
+    #expect(model.discoverPrintersReadinessMessage == "Discovery in progress.")
+    #expect(model.canDiscoverPrinters == false)
     #expect(model.connectionMessage == "Discovery in progress.")
     #expect(model.isDiscovering == true)
 }
@@ -71,6 +73,8 @@ import Testing
     model.checkCode = "123456"
     model.isDiscovering = true
 
+    #expect(model.discoverPrintersReadinessMessage == "Discovery in progress.")
+    #expect(model.canDiscoverPrinters == false)
     #expect(model.selectedPrinterConnectReadinessMessage == "Discovery in progress.")
     #expect(model.canConnectSelectedPrinter == false)
     #expect(model.connectKnownPrintersReadinessMessage == "Discovery in progress.")
@@ -103,6 +107,8 @@ import Testing
     model.checkCode = "123456"
     model.isUploadingJob = true
 
+    #expect(model.discoverPrintersReadinessMessage == "Upload in progress.")
+    #expect(model.canDiscoverPrinters == false)
     #expect(model.selectedPrinterConnectReadinessMessage == "Upload in progress.")
     #expect(model.canConnectSelectedPrinter == false)
     #expect(model.connectKnownPrintersReadinessMessage == "Upload in progress.")
@@ -113,6 +119,30 @@ import Testing
     #expect(model.canRefreshKnownPrinterStatuses == false)
     #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == "Upload in progress.")
     #expect(model.canSendSelectedPrinterJobCommand(.pause) == false)
+}
+
+@MainActor
+@Test func discoveryRequestDuringUploadDoesNotStartScan() async {
+    let service = RecordingPrinterService()
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(service: service, bootstrapClient: FakeBootstrapClient(), printers: [printer])
+    model.selection = .printer(printer.id)
+    model.isUploadingJob = true
+
+    await model.discoverPrinters()
+
+    #expect(service.requestCount == 0)
+    #expect(model.connectionMessage == "Upload in progress.")
+    #expect(model.isDiscovering == false)
 }
 
 @MainActor
