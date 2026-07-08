@@ -225,6 +225,14 @@ import Testing
     #expect(model.canConnectKnownPrinters == false)
     #expect(model.refreshKnownPrinterStatusesReadinessMessage == "Add or discover printers first.")
     #expect(model.canRefreshKnownPrinterStatuses == false)
+
+    let identifiedCount = await model.connectKnownPrinters()
+    #expect(identifiedCount == 0)
+    #expect(model.connectionMessage == "Add or discover printers first.")
+
+    let refreshedCount = await model.refreshKnownPrinterStatuses()
+    #expect(refreshedCount == 0)
+    #expect(model.connectionMessage == "Add or discover printers first.")
 }
 
 @MainActor
@@ -248,6 +256,10 @@ import Testing
     #expect(model.canConnectKnownPrinters == true)
     #expect(model.refreshKnownPrinterStatusesReadinessMessage == "Identify printers and save check codes before refreshing statuses.")
     #expect(model.canRefreshKnownPrinterStatuses == false)
+
+    let refreshedCount = await model.refreshKnownPrinterStatuses()
+    #expect(refreshedCount == 0)
+    #expect(model.connectionMessage == "Identify printers and save check codes before refreshing statuses.")
 }
 
 @MainActor

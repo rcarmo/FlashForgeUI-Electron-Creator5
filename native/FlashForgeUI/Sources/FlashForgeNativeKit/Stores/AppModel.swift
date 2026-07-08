@@ -1047,7 +1047,8 @@ public final class AppModel {
 
     @discardableResult
     public func connectKnownPrinters() async -> Int {
-        guard canConnectKnownPrinters else {
+        if let readinessMessage = connectKnownPrintersReadinessMessage {
+            connectionMessage = readinessMessage
             return 0
         }
 
@@ -1110,17 +1111,14 @@ public final class AppModel {
 
     @discardableResult
     private func refreshKnownPrinterStatuses(announcesProgress: Bool) async -> Int {
-        guard !isRefreshingAllStatuses, !isRefreshingStatus else {
+        if let readinessMessage = refreshKnownPrinterStatusesReadinessMessage {
+            if announcesProgress {
+                connectionMessage = readinessMessage
+            }
             return 0
         }
 
         let targets = printers.filter(isStatusRefreshable)
-        guard !targets.isEmpty else {
-            if announcesProgress {
-                connectionMessage = "Connect printers and save check codes before refreshing all."
-            }
-            return 0
-        }
 
         isRefreshingAllStatuses = true
         if announcesProgress {
