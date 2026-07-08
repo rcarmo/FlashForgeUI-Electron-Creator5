@@ -34,9 +34,7 @@ public struct ContentView: View {
         .sheet(isPresented: $showsAddPrinter) {
             AddPrinterSheetView(model: model)
         }
-        .sheet(isPresented: $showsSettings) {
-            SettingsSheetView(model: model)
-        }
+        .settingsSheetIfNeeded(model: model, isPresented: $showsSettings)
         .onOpenURL { fileURL in
             model.openJobFile(fileURL)
         }
@@ -73,6 +71,7 @@ private struct AddPrinterSheetView: View {
     }
 }
 
+#if !os(macOS)
 private struct SettingsSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable private var model: AppModel
@@ -94,8 +93,20 @@ private struct SettingsSheetView: View {
         }
     }
 }
+#endif
 
 private extension View {
+    @ViewBuilder
+    func settingsSheetIfNeeded(model: AppModel, isPresented: Binding<Bool>) -> some View {
+        #if os(macOS)
+        self
+        #else
+        self.sheet(isPresented: isPresented) {
+            SettingsSheetView(model: model)
+        }
+        #endif
+    }
+
     @ViewBuilder
     func addPrinterSheetSizing() -> some View {
         #if os(macOS)
