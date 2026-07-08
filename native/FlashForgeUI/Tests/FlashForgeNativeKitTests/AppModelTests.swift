@@ -2378,6 +2378,8 @@ import Testing
     #expect(model.selectedPendingJobSummary == "studio.gcode selected for upload.")
     #expect(model.selectedUploadActionSummary == "Upload, level the bed, then start printing.")
     #expect(model.canChooseUploadLeveling == true)
+    #expect(model.canChangeSelectedUploadOptions == true)
+    #expect(model.selectedUploadOptionChangeReadinessMessage == nil)
     #expect(model.canClearSelectedUploadFile == true)
     #expect(model.selectedUploadReadinessMessage == "Enter the printer check code to upload a job.")
     #expect(model.canUploadSelectedJob == false)
@@ -2443,6 +2445,8 @@ import Testing
     #expect(model.canOpenJobFile == false)
     #expect(model.canClearSelectedUploadFile == false)
     #expect(model.canClearRecentUploadFiles == false)
+    #expect(model.selectedUploadOptionChangeReadinessMessage == "Upload in progress.")
+    #expect(model.canChangeSelectedUploadOptions == false)
 
     model.selectUploadFile(replacementFileURL)
     #expect(model.selectedUploadFileURL == selectedFileURL)

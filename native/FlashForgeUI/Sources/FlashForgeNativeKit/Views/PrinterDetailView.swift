@@ -366,14 +366,22 @@ public struct PrinterDetailView: View {
     private var uploadOptions: some View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle("Start after upload", isOn: $model.startPrintAfterUpload)
+                .disabled(!model.canChangeSelectedUploadOptions)
 
             if model.canChooseUploadLeveling {
                 Toggle("Level before print", isOn: $model.levelingBeforePrint)
+                    .disabled(!model.canChangeSelectedUploadOptions)
             }
 
             Label(model.selectedUploadActionSummary, systemImage: "checklist")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+
+            if let uploadOptionReadinessMessage = model.selectedUploadOptionChangeReadinessMessage {
+                Label(uploadOptionReadinessMessage, systemImage: "info.circle")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

@@ -706,6 +706,18 @@ public final class AppModel {
         startPrintAfterUpload
     }
 
+    public var canChangeSelectedUploadOptions: Bool {
+        selectedUploadOptionChangeReadinessMessage == nil
+    }
+
+    public var selectedUploadOptionChangeReadinessMessage: String? {
+        if isUploadingJob {
+            return "Upload in progress."
+        }
+
+        return nil
+    }
+
     public var canClearSelectedUploadFile: Bool {
         selectedUploadFileURL != nil && canChangeSelectedUploadFile
     }
