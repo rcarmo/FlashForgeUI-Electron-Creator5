@@ -751,7 +751,14 @@ public final class AppModel {
     public func acknowledgeCameraOpen() {
         let config = selectedCameraStreamConfig
         if config.isAvailable, let streamURL = config.streamURL {
-            connectionMessage = "Camera stream ready: \(streamURL.absoluteString)"
+            switch config.streamType {
+            case .mjpeg:
+                connectionMessage = "Camera preview ready: \(streamURL.absoluteString)"
+            case .rtsp:
+                connectionMessage = "Opening RTSP stream in the default app: \(streamURL.absoluteString)"
+            case nil:
+                connectionMessage = "Opening camera stream: \(streamURL.absoluteString)"
+            }
         } else {
             connectionMessage = config.unavailableReason ?? "Camera is not available."
         }

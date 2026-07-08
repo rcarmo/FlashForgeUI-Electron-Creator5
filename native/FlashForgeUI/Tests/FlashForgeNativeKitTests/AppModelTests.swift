@@ -1640,7 +1640,35 @@ import Testing
     await model.refreshSelectedPrinterStatus()
     model.acknowledgeCameraOpen()
 
-    #expect(model.connectionMessage == "Camera stream ready: http://192.168.1.44:8080/?action=stream")
+    #expect(model.connectionMessage == "Camera preview ready: http://192.168.1.44:8080/?action=stream")
+}
+
+@MainActor
+@Test func acknowledgeCameraOpenExplainsRTSPSystemHandoff() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "Unknown",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        commandPort: 8899,
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        modernClient: FakeModernClient(),
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+
+    await model.refreshSelectedPrinterStatus()
+    model.acknowledgeCameraOpen()
+
+    #expect(model.connectionMessage == "Opening RTSP stream in the default app: rtsp://192.168.1.44/live")
 }
 
 @MainActor
