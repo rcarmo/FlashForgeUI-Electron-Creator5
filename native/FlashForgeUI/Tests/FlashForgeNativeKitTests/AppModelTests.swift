@@ -410,6 +410,59 @@ import Testing
 }
 
 @MainActor
+@Test func discoveryMatchesSavedProfileWithMissingCommandPort() async {
+    let printerID = UUID()
+    let store = RecordingProfileStore(
+        document: PrinterProfileDocument(
+            profiles: [
+                PrinterProfile(
+                    id: printerID,
+                    name: "Saved Printer",
+                    model: "Manual Printer",
+                    address: "192.168.1.55",
+                    serialNumber: nil,
+                    commandPort: nil,
+                    eventPort: nil,
+                    protocolFormat: nil,
+                    checkCode: "654321"
+                )
+            ],
+            selectedPrinterID: printerID
+        )
+    )
+    let discoveredPrinter = PrinterSnapshot(
+        name: "Fresh Printer",
+        model: "Adventurer 5M Pro",
+        address: "192.168.1.55",
+        serialNumber: "SN-FRESH",
+        commandPort: 8899,
+        eventPort: 8898,
+        protocolFormat: .modern,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let model = AppModel(
+        service: SinglePrinterService(printer: discoveredPrinter),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store
+    )
+
+    await model.discoverPrinters()
+
+    #expect(model.printers.count == 1)
+    #expect(model.selectedPrinter?.id == printerID)
+    #expect(model.selectedPrinter?.name == "Fresh Printer")
+    #expect(model.selectedPrinter?.serialNumber == "SN-FRESH")
+    #expect(model.selectedPrinter?.commandPort == 8899)
+    #expect(model.checkCode == "654321")
+    #expect(store.document.profiles.count == 1)
+    #expect(store.document.profiles.first?.id == printerID)
+    #expect(store.document.profiles.first?.checkCode == "654321")
+    #expect(store.document.profiles.first?.commandPort == 8899)
+}
+
+@MainActor
 @Test func customCameraSettingsPersistWithSelectedPrinterProfile() async {
     let printer = PrinterSnapshot(
         name: "Desk Printer",

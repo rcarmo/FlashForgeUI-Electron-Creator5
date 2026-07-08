@@ -1381,7 +1381,11 @@ public final class AppModel {
             return true
         }
 
-        return lhs.address == rhs.address && lhs.commandPort == rhs.commandPort
+        return lhs.address == rhs.address && normalizedCommandPort(lhs) == normalizedCommandPort(rhs)
+    }
+
+    private func normalizedCommandPort(_ printer: PrinterSnapshot) -> Int {
+        printer.commandPort ?? 8899
     }
 
     private func isPreviewPrinter(_ printer: PrinterSnapshot) -> Bool {
