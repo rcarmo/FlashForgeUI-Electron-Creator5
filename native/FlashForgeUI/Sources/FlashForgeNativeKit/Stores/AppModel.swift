@@ -6,7 +6,7 @@ import Observation
 public final class AppModel {
     nonisolated public static let supportedUploadFileExtensions = ["gcode", "gx", "3mf"]
     nonisolated public static let manualPrinterCheckCodeHelpMessage =
-        "Needed for refresh, upload, and job controls. Discovered printers will ask for it when they need it."
+        "Find the Device ID on the printer in Settings > Network > LAN Only."
 
     public var printers: [PrinterSnapshot]
     public var selection: AppSelection? {
@@ -205,8 +205,8 @@ public final class AppModel {
         }
 
         return hasSelectedPrinterCheckCode
-            ? "Printer access code saved."
-            : "Needed for refresh, upload, and job controls."
+            ? "Device ID saved."
+            : "Find it on the printer in Settings > Network > LAN Only."
     }
 
     public var selectedPrinterNeedsAccessCode: Bool {
@@ -238,7 +238,7 @@ public final class AppModel {
         }
 
         checkCode = ""
-        connectionMessage = "Printer access code cleared."
+        connectionMessage = "Device ID cleared."
     }
 
     @discardableResult
@@ -255,7 +255,7 @@ public final class AppModel {
 
         let trimmedAccessCode = accessCode.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedAccessCode.isEmpty else {
-            connectionMessage = "Enter the printer access code."
+            connectionMessage = "Enter the printer Device ID."
             return false
         }
 
@@ -264,7 +264,7 @@ public final class AppModel {
         if printer.serialNumber?.isEmpty == false {
             identificationFailureMessagesByPrinterID.removeValue(forKey: printer.id)
         }
-        connectionMessage = "Access code saved for \(printer.name)."
+        connectionMessage = "Device ID saved for \(printer.name)."
         return true
     }
 
@@ -343,7 +343,7 @@ public final class AppModel {
         }
 
         if printerNeedsAccessCode(printer) {
-            return "Needs printer access code."
+            return "Needs Device ID."
         }
 
         switch printer.status {
@@ -362,7 +362,7 @@ public final class AppModel {
         }
 
         if printerNeedsAccessCode(printer) {
-            return "Enter access code to load printer status."
+            return "Enter Device ID to load printer status."
         }
 
         switch printer.status {
@@ -398,7 +398,7 @@ public final class AppModel {
             return nil
         }
 
-        return "Enter the printer access code for \(printer.name) to refresh status, upload jobs, and control prints."
+        return "Enter the Device ID for \(printer.name) to refresh status, upload jobs, and control prints. Find it on the printer in Settings > Network > LAN Only."
     }
 
     public func temperatureTelemetryItems(for printer: PrinterSnapshot) -> [TemperatureTelemetryItem] {
@@ -558,7 +558,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Enter the printer access code below to control this job."
+            return "Enter the Device ID below to control this job."
         }
 
         return nil
@@ -614,7 +614,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Enter the printer access code below to upload a job."
+            return "Enter the Device ID below to upload a job."
         }
 
         guard doesUploadFileExist(fileURL) else {
@@ -638,7 +638,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Needs printer access code."
+            return "Needs Device ID."
         }
 
         return "Ready to refresh."
@@ -682,7 +682,7 @@ public final class AppModel {
         }
 
         if let printer = selectedPrinter, printerNeedsAccessCode(printer) {
-            return "Enter the printer access code below to connect."
+            return "Enter the Device ID below to connect."
         }
 
         return nil
@@ -730,7 +730,7 @@ public final class AppModel {
         }
 
         guard storedCheckCode(for: printer.id) != nil else {
-            return "Enter the printer access code below to refresh status."
+            return "Enter the Device ID below to refresh status."
         }
 
         return nil
@@ -815,10 +815,10 @@ public final class AppModel {
 
         guard refreshablePrinterCount > 0 else {
             if printers.contains(where: printerNeedsAccessCode) {
-                return "Enter printer access codes for discovered printers before refreshing statuses."
+                return "Enter Device IDs for discovered printers before refreshing statuses."
             }
 
-            return "Identify printers and save printer access codes before refreshing statuses."
+            return "Identify printers and save Device IDs before refreshing statuses."
         }
 
         return nil
@@ -1025,7 +1025,7 @@ public final class AppModel {
     }
 
     public var selectedPrinterRemovalConfirmationMessage: String {
-        "This removes the saved profile, printer access code, camera settings, and cached status from this app."
+        "This removes the saved profile, Device ID, camera settings, and cached status from this app."
     }
 
     public var canOpenJobFile: Bool {
@@ -1334,7 +1334,7 @@ public final class AppModel {
 
         let trimmedCheckCode = checkCode.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedCheckCode.isEmpty else {
-            connectionMessage = "Enter the printer access code below to upload a job."
+            connectionMessage = "Enter the Device ID below to upload a job."
             return
         }
 
@@ -1475,7 +1475,7 @@ public final class AppModel {
                 mergedCount: printers.count
             )
             if let accessCodePrinter {
-                connectionMessage = "\(summary) Enter the access code for \(accessCodePrinter.name) to refresh status."
+                connectionMessage = "\(summary) Enter the Device ID for \(accessCodePrinter.name) to refresh status."
             } else {
                 connectionMessage = summary
             }
@@ -1672,7 +1672,7 @@ public final class AppModel {
 
         guard let trimmedCheckCode = storedCheckCode(for: printer.id) else {
             if announcesProgress {
-                connectionMessage = "Enter the printer access code below to refresh status."
+                connectionMessage = "Enter the Device ID below to refresh status."
             }
             return false
         }
@@ -2041,19 +2041,19 @@ public final class AppModel {
         case .httpStatus(let statusCode, let message):
             let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmedMessage.isEmpty {
-                return "Upload failed with HTTP \(statusCode). Check printer status, access code, and network."
+                return "Upload failed with HTTP \(statusCode). Check printer status, Device ID, and network."
             }
 
-            return "Upload failed with HTTP \(statusCode): \(trimmedMessage)."
+            return "Upload failed with HTTP \(statusCode): \(userFacingPrinterMessage(trimmedMessage))."
         case .invalidResponse:
             return "Upload failed because the printer returned an unexpected response."
         case .rejected(let message):
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedMessage.isEmpty {
-                return "Printer rejected the upload. Check the access code and printer status."
+                return "Printer rejected the upload. Check the Device ID and printer status."
             }
 
-            return "Printer rejected the upload: \(trimmedMessage)."
+            return "Printer rejected the upload: \(userFacingPrinterMessage(trimmedMessage))."
         }
     }
 
@@ -2063,10 +2063,10 @@ public final class AppModel {
         }
 
         if refreshedCount == 0 {
-            return "Could not refresh any printers. Check saved printer access codes and network."
+            return "Could not refresh any printers. Check saved Device IDs and network."
         }
 
-        return "Refreshed \(refreshedCount) of \(targetCount) printers. Check the remaining printers' access codes and network."
+        return "Refreshed \(refreshedCount) of \(targetCount) printers. Check the remaining printers' Device IDs and network."
     }
 
     private func knownPrinterIdentificationSummary(identifiedCount: Int, targetCount: Int) -> String {
@@ -2108,7 +2108,7 @@ public final class AppModel {
 
     private func statusRefreshFailureSummary(for error: Error) -> String {
         guard let httpError = error as? ModernPrinterHTTPError else {
-            return "Last refresh failed. Check the printer access code and network."
+            return "Last refresh failed. Check the Device ID and network."
         }
 
         switch httpError {
@@ -2119,17 +2119,17 @@ public final class AppModel {
         case .httpStatus(let statusCode, let message):
             let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmedMessage.isEmpty {
-                return "Last refresh failed with HTTP \(statusCode). Check the printer access code and network."
+                return "Last refresh failed with HTTP \(statusCode). Check the Device ID and network."
             }
 
-            return "Last refresh failed with HTTP \(statusCode): \(trimmedMessage)."
+            return "Last refresh failed with HTTP \(statusCode): \(userFacingPrinterMessage(trimmedMessage))."
         case .printerRejectedRequest(let message):
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedMessage.isEmpty {
-                return "Last refresh rejected. Check the printer access code and printer status."
+                return "Last refresh rejected. Check the Device ID and printer status."
             }
 
-            return "Last refresh rejected: \(trimmedMessage)."
+            return "Last refresh rejected: \(userFacingPrinterMessage(trimmedMessage))."
         case .missingDetail:
             return "Last refresh failed. The printer did not include status details."
         }
@@ -2140,10 +2140,10 @@ public final class AppModel {
         let action = isBackground ? "Auto-refresh failed for" : "Could not refresh"
         guard let httpError = error as? ModernPrinterHTTPError else {
             if isBackground {
-                return "Auto-refresh failed for \(target). Check the printer access code and network."
+                return "Auto-refresh failed for \(target). Check the Device ID and network."
             }
 
-            return "Could not refresh \(target). Check the printer access code and network."
+            return "Could not refresh \(target). Check the Device ID and network."
         }
 
         switch httpError {
@@ -2154,20 +2154,26 @@ public final class AppModel {
         case .httpStatus(let statusCode, let message):
             let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmedMessage.isEmpty {
-                return "\(action) \(target). Printer returned HTTP \(statusCode). Check the printer access code and network."
+                return "\(action) \(target). Printer returned HTTP \(statusCode). Check the Device ID and network."
             }
 
-            return "\(action) \(target). Printer returned HTTP \(statusCode): \(trimmedMessage)."
+            return "\(action) \(target). Printer returned HTTP \(statusCode): \(userFacingPrinterMessage(trimmedMessage))."
         case .printerRejectedRequest(let message):
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedMessage.isEmpty {
-                return "\(action) \(target). Printer rejected the refresh. Check the printer access code and printer status."
+                return "\(action) \(target). Printer rejected the refresh. Check the Device ID and printer status."
             }
 
-            return "\(action) \(target). Printer rejected the refresh: \(trimmedMessage)."
+            return "\(action) \(target). Printer rejected the refresh: \(userFacingPrinterMessage(trimmedMessage))."
         case .missingDetail:
             return "\(action) \(target). The printer did not include status details."
         }
+    }
+
+    private func userFacingPrinterMessage(_ message: String) -> String {
+        message
+            .replacingOccurrences(of: "check code", with: "Device ID", options: [.caseInsensitive])
+            .replacingOccurrences(of: "access code", with: "Device ID", options: [.caseInsensitive])
     }
 
     private func supportsLocalCameraFallback(printer: PrinterSnapshot, status: ModernPrinterStatus?) -> Bool {
@@ -2184,7 +2190,7 @@ public final class AppModel {
 
     private func jobCommandFailureMessage(for command: PrinterJobCommand, error: Error) -> String {
         guard let commandError = error as? ModernPrinterCommandError else {
-            return "Could not send \(command.rawValue). Check the printer access code and network."
+            return "Could not send \(command.rawValue). Check the Device ID and network."
         }
 
         switch commandError {
@@ -2193,10 +2199,10 @@ public final class AppModel {
         case .httpStatus(let statusCode, let message):
             let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmedMessage.isEmpty {
-                return "Could not send \(command.rawValue). Printer returned HTTP \(statusCode). Check printer status, access code, and network."
+                return "Could not send \(command.rawValue). Printer returned HTTP \(statusCode). Check printer status, Device ID, and network."
             }
 
-            return "Could not send \(command.rawValue). Printer returned HTTP \(statusCode): \(trimmedMessage)."
+            return "Could not send \(command.rawValue). Printer returned HTTP \(statusCode): \(userFacingPrinterMessage(trimmedMessage))."
         case .invalidResponse:
             return "Could not send \(command.rawValue). The printer returned an unexpected response."
         case .rejected(let message):
@@ -2205,7 +2211,7 @@ public final class AppModel {
                 return "Printer rejected \(command.rawValue). Check the current job state."
             }
 
-            return "Printer rejected \(command.rawValue): \(trimmedMessage)."
+            return "Printer rejected \(command.rawValue): \(userFacingPrinterMessage(trimmedMessage))."
         }
     }
 

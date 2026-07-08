@@ -48,7 +48,7 @@ public struct AddPrinterFormView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                SecureField("Printer access code", text: $checkCode)
+                SecureField("Device ID", text: $checkCode)
                     .textFieldStyle(.roundedBorder)
                     .disabled(model.manualPrinterProfileChangeReadinessMessage != nil)
 

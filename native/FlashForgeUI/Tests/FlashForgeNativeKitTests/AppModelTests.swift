@@ -15,8 +15,8 @@ import Testing
     #expect(model.printers.count == 2)
     #expect(model.selectedPrinter?.name == "Creator 5 Studio")
     #expect(model.selectedPrinterNeedsAccessCode == true)
-    #expect(model.selectedPrinterAccessCodePromptMessage == "Enter the printer access code for Creator 5 Studio to refresh status, upload jobs, and control prints.")
-    #expect(model.connectionMessage == "Found 2 printers. Enter the access code for Creator 5 Studio to refresh status.")
+    #expect(model.selectedPrinterAccessCodePromptMessage == "Enter the Device ID for Creator 5 Studio to refresh status, upload jobs, and control prints. Find it on the printer in Settings > Network > LAN Only.")
+    #expect(model.connectionMessage == "Found 2 printers. Enter the Device ID for Creator 5 Studio to refresh status.")
     #expect(model.activePrintCount == 1)
 
     let didSave = model.saveSelectedPrinterAccessCode(" 123456 ")
@@ -192,7 +192,7 @@ import Testing
     #expect(model.checkCode == "654321")
     #expect(model.hasSelectedPrinterCheckCode == true)
     #expect(model.canClearSelectedPrinterCheckCode == true)
-    #expect(model.selectedPrinterCheckCodeStatusMessage == "Printer access code saved.")
+    #expect(model.selectedPrinterCheckCodeStatusMessage == "Device ID saved.")
     #expect(model.customCameraEnabled == true)
     #expect(model.customCameraURL == "http://camera.local:8080/?action=stream")
     #expect(model.selectedCameraStreamConfig.sourceType == .custom)
@@ -202,9 +202,9 @@ import Testing
     #expect(model.checkCode == "")
     #expect(model.hasSelectedPrinterCheckCode == false)
     #expect(model.canClearSelectedPrinterCheckCode == false)
-    #expect(model.selectedPrinterCheckCodeStatusMessage == "Needed for refresh, upload, and job controls.")
+    #expect(model.selectedPrinterCheckCodeStatusMessage == "Find it on the printer in Settings > Network > LAN Only.")
     #expect(store.document.profiles.first?.checkCode == nil)
-    #expect(model.connectionMessage == "Printer access code cleared.")
+    #expect(model.connectionMessage == "Device ID cleared.")
 }
 
 @MainActor
@@ -353,12 +353,12 @@ import Testing
 
     #expect(model.connectKnownPrintersReadinessMessage == nil)
     #expect(model.canConnectKnownPrinters == true)
-    #expect(model.refreshKnownPrinterStatusesReadinessMessage == "Identify printers and save printer access codes before refreshing statuses.")
+    #expect(model.refreshKnownPrinterStatusesReadinessMessage == "Identify printers and save Device IDs before refreshing statuses.")
     #expect(model.canRefreshKnownPrinterStatuses == false)
 
     let refreshedCount = await model.refreshKnownPrinterStatuses()
     #expect(refreshedCount == 0)
-    #expect(model.connectionMessage == "Identify printers and save printer access codes before refreshing statuses.")
+    #expect(model.connectionMessage == "Identify printers and save Device IDs before refreshing statuses.")
 }
 
 @MainActor
@@ -707,7 +707,7 @@ import Testing
     #expect(model.selectedPrinter?.protocolFormat == .modern)
     #expect(model.selectedPrinter?.status == .offline)
     #expect(model.connectionMessage == "Added Workshop. Connect to identify it.")
-    #expect(AppModel.manualPrinterCheckCodeHelpMessage == "Needed for refresh, upload, and job controls. Discovered printers will ask for it when they need it.")
+    #expect(AppModel.manualPrinterCheckCodeHelpMessage == "Find the Device ID on the printer in Settings > Network > LAN Only.")
     #expect(model.checkCode == "123456")
     #expect(store.document.profiles.count == 1)
     #expect(store.document.profiles.first?.checkCode == "123456")
@@ -899,7 +899,7 @@ import Testing
     let removedID = model.selectedPrinter?.id
 
     #expect(model.selectedPrinterRemovalConfirmationTitle == "Forget Second?")
-    #expect(model.selectedPrinterRemovalConfirmationMessage == "This removes the saved profile, printer access code, camera settings, and cached status from this app.")
+    #expect(model.selectedPrinterRemovalConfirmationMessage == "This removes the saved profile, Device ID, camera settings, and cached status from this app.")
     model.removeSelectedPrinter()
 
     #expect(model.printers.count == 1)
@@ -1333,7 +1333,7 @@ import Testing
     model.selection = .printer(printer.id)
     model.connectionMessage = "Standing by."
 
-    #expect(model.selectedPrinterStatusRefreshReadinessMessage == "Enter the printer access code below to refresh status.")
+    #expect(model.selectedPrinterStatusRefreshReadinessMessage == "Enter the Device ID below to refresh status.")
     #expect(model.canRefreshSelectedPrinterStatus == false)
 
     let didRefresh = await model.refreshSelectedPrinterStatusInBackground()
@@ -1370,7 +1370,7 @@ import Testing
         printers: [identifiedPrinter, unidentifiedPrinter]
     )
 
-    #expect(model.statusRefreshContextMessage(for: identifiedPrinter) == "Needs printer access code.")
+    #expect(model.statusRefreshContextMessage(for: identifiedPrinter) == "Needs Device ID.")
     #expect(model.canRefreshStatus(for: identifiedPrinter) == false)
     #expect(model.statusRefreshContextMessage(for: unidentifiedPrinter) == "Identify printer first.")
     #expect(model.canRefreshStatus(for: unidentifiedPrinter) == false)
@@ -1441,8 +1441,8 @@ import Testing
 
     #expect(didRefresh == false)
     #expect(client.requestCount == 1)
-    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the printer access code and network.")
-    #expect(model.connectionMessage == "Could not refresh Desk Printer at 192.168.1.44. Check the printer access code and network.")
+    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the Device ID and network.")
+    #expect(model.connectionMessage == "Could not refresh Desk Printer at 192.168.1.44. Check the Device ID and network.")
     #expect(model.isRefreshingStatus == false)
 }
 
@@ -1500,8 +1500,8 @@ import Testing
     let didRefresh = await model.refreshSelectedPrinterStatus()
 
     #expect(didRefresh == false)
-    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed with HTTP 403: Check code is invalid.")
-    #expect(model.connectionMessage == "Could not refresh Desk Printer at 192.168.1.44. Printer returned HTTP 403: Check code is invalid.")
+    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed with HTTP 403: Device ID is invalid.")
+    #expect(model.connectionMessage == "Could not refresh Desk Printer at 192.168.1.44. Printer returned HTTP 403: Device ID is invalid.")
     #expect(model.isRefreshingStatus == false)
 }
 
@@ -1531,7 +1531,7 @@ import Testing
     let failedRefresh = await model.refreshSelectedPrinterStatus()
 
     #expect(failedRefresh == false)
-    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the printer access code and network.")
+    #expect(model.selectedPrinterStatusFailureSummary == "Last refresh failed. Check the Device ID and network.")
 
     let successfulRefresh = await model.refreshSelectedPrinterStatus()
 
@@ -1630,9 +1630,9 @@ import Testing
 
     #expect(refreshedCount == 0)
     #expect(client.requestCount == 2)
-    #expect(model.statusFailureSummary(for: model.printers[0]) == "Last refresh failed. Check the printer access code and network.")
-    #expect(model.statusFailureSummary(for: model.printers[1]) == "Last refresh failed. Check the printer access code and network.")
-    #expect(model.connectionMessage == "Could not refresh any printers. Check saved printer access codes and network.")
+    #expect(model.statusFailureSummary(for: model.printers[0]) == "Last refresh failed. Check the Device ID and network.")
+    #expect(model.statusFailureSummary(for: model.printers[1]) == "Last refresh failed. Check the Device ID and network.")
+    #expect(model.connectionMessage == "Could not refresh any printers. Check saved Device IDs and network.")
     #expect(model.isRefreshingAllStatuses == false)
 }
 
@@ -2202,14 +2202,14 @@ import Testing
     model.selection = .printer(printer.id)
 
     #expect(model.hasSelectedPrinterCheckCode == false)
-    #expect(model.selectedPrinterCheckCodeStatusMessage == "Needed for refresh, upload, and job controls.")
-    #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == "Enter the printer access code below to control this job.")
+    #expect(model.selectedPrinterCheckCodeStatusMessage == "Find it on the printer in Settings > Network > LAN Only.")
+    #expect(model.selectedPrinterJobCommandReadinessMessage(for: .pause) == "Enter the Device ID below to control this job.")
     #expect(model.canSendSelectedPrinterJobCommand(.pause) == false)
 
     await model.sendSelectedPrinterJobCommand(.pause)
 
     #expect(commandClient.lastCommand == nil)
-    #expect(model.connectionMessage == "Enter the printer access code below to control this job.")
+    #expect(model.connectionMessage == "Enter the Device ID below to control this job.")
 }
 
 @MainActor
@@ -2439,7 +2439,7 @@ import Testing
 
     await model.uploadSelectedJob()
 
-    #expect(model.connectionMessage == "Printer rejected the upload: Check code is invalid.")
+    #expect(model.connectionMessage == "Printer rejected the upload: Device ID is invalid.")
     #expect(model.isUploadingJob == false)
 }
 
@@ -2476,7 +2476,7 @@ import Testing
 
     await model.uploadSelectedJob()
 
-    #expect(model.connectionMessage == "Upload failed with HTTP 403: Check code is invalid.")
+    #expect(model.connectionMessage == "Upload failed with HTTP 403: Device ID is invalid.")
     #expect(model.isUploadingJob == false)
 }
 
@@ -2559,7 +2559,7 @@ import Testing
     #expect(model.canChangeSelectedUploadOptions == true)
     #expect(model.selectedUploadOptionChangeReadinessMessage == nil)
     #expect(model.canClearSelectedUploadFile == true)
-    #expect(model.selectedUploadReadinessMessage == "Enter the printer access code below to upload a job.")
+    #expect(model.selectedUploadReadinessMessage == "Enter the Device ID below to upload a job.")
     #expect(model.canUploadSelectedJob == false)
 
     model.levelingBeforePrint = false

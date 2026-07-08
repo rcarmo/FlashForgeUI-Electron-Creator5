@@ -197,7 +197,7 @@ public struct PrinterDetailView: View {
     private var accessCodePrompt: some View {
         if let promptMessage = model.selectedPrinterAccessCodePromptMessage {
             VStack(alignment: .leading, spacing: 12) {
-                Label("Access Code Required", systemImage: "key")
+                Label("Device ID Required", systemImage: "key")
                     .font(.title3.weight(.semibold))
 
                 Text(promptMessage)
@@ -221,7 +221,7 @@ public struct PrinterDetailView: View {
     }
 
     private var accessCodeField: some View {
-        SecureField("Printer access code", text: $accessCodeInput)
+        SecureField("Device ID", text: $accessCodeInput)
             .textFieldStyle(.roundedBorder)
             .frame(minWidth: 180)
             .disabled(model.selectedPrinterProfileChangeReadinessMessage != nil)
