@@ -128,6 +128,7 @@ import Testing
     let readyStation = MaterialStationStatus(
         connected: true,
         slots: [
+            MaterialStationSlot(slotId: 3, materialType: "PETG", materialColor: "#00ff00", isEmpty: false),
             MaterialStationSlot(slotId: 1, materialType: "PLA", materialColor: "#ff0000", isEmpty: false),
             MaterialStationSlot(slotId: 2, isEmpty: true)
         ],
@@ -135,8 +136,9 @@ import Testing
         overallStatus: .ready
     )
 
-    #expect(readyStation.occupiedSlotCount == 1)
-    #expect(readyStation.statusSummary == "1 of 2 slots loaded.")
+    #expect(readyStation.occupiedSlotCount == 2)
+    #expect(readyStation.displaySlots.map(\.slotId) == [1, 2, 3])
+    #expect(readyStation.statusSummary == "2 of 3 slots loaded.")
     #expect(readyStation.activeSlotSummary == "Slot 1 active: PLA.")
 
     let changingStation = MaterialStationStatus(

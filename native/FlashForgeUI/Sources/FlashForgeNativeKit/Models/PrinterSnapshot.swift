@@ -142,6 +142,12 @@ public struct MaterialStationStatus: Hashable, Codable, Sendable {
         slots.filter { !$0.isEmpty }.count
     }
 
+    public var displaySlots: [MaterialStationSlot] {
+        slots.sorted { lhs, rhs in
+            lhs.slotId < rhs.slotId
+        }
+    }
+
     public var statusSummary: String {
         if let errorMessage, !errorMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return errorMessage

@@ -29,9 +29,9 @@ public struct MaterialStationView: View {
                 }
             }
 
-            if !station.slots.isEmpty {
+            if !station.displaySlots.isEmpty {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
-                    ForEach(station.slots) { slot in
+                    ForEach(station.displaySlots) { slot in
                         MaterialSlotCard(
                             slot: slot,
                             isActive: station.activeSlot == slot.slotId
