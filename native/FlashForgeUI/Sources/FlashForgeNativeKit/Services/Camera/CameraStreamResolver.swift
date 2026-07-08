@@ -63,6 +63,20 @@ public struct CameraStreamConfig: Equatable, Sendable {
         self.recoverySuggestion = recoverySuggestion
         self.recoveryAction = recoveryAction
     }
+
+    public var recoveryActions: [CameraRecoveryAction] {
+        var actions: [CameraRecoveryAction] = []
+
+        if let recoveryAction {
+            actions.append(recoveryAction)
+        }
+
+        if !isAvailable, sourceType == .none, !actions.contains(.openSettings) {
+            actions.append(.openSettings)
+        }
+
+        return actions
+    }
 }
 
 public enum CameraStreamValidationError: Error, Equatable, CustomStringConvertible, Sendable {

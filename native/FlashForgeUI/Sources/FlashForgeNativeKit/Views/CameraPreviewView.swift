@@ -81,7 +81,7 @@ public struct CameraPreviewView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            if let recoveryAction = config.recoveryAction {
+            ForEach(config.recoveryActions, id: \.self) { recoveryAction in
                 Button {
                     onRecover(recoveryAction)
                 } label: {

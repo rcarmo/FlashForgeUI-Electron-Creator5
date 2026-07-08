@@ -36,6 +36,7 @@ import Testing
     #expect(config.streamURL == nil)
     #expect(config.recoverySuggestion == "Update the custom camera URL in Settings.")
     #expect(config.recoveryAction == .openSettings)
+    #expect(config.recoveryActions == [.openSettings])
 }
 
 @Test func cameraResolverUsesOEMBeforeFallback() throws {
@@ -79,4 +80,5 @@ import Testing
     #expect(config.unavailableReason == "No camera stream is available for this printer.")
     #expect(config.recoverySuggestion == "Refresh status or set a custom camera URL in Settings.")
     #expect(config.recoveryAction == .refreshStatus)
+    #expect(config.recoveryActions == [.refreshStatus, .openSettings])
 }
