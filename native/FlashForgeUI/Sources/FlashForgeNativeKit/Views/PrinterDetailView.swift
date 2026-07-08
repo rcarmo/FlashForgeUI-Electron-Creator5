@@ -302,6 +302,7 @@ public struct PrinterDetailView: View {
             SecureField("Check code", text: $model.checkCode)
                 .textFieldStyle(.roundedBorder)
                 .frame(maxWidth: 220)
+                .disabled(model.selectedPrinterProfileChangeReadinessMessage != nil)
 
             if let checkCodeStatusMessage = model.selectedPrinterCheckCodeStatusMessage {
                 Label(

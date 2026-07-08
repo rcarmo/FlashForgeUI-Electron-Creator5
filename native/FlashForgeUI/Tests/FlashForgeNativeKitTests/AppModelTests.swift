@@ -570,6 +570,56 @@ import Testing
 }
 
 @MainActor
+@Test func profileChangesAreLockedDuringUpload() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        commandPort: 8899,
+        eventPort: 8898,
+        protocolFormat: .modern,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let store = RecordingProfileStore()
+    let model = AppModel(
+        service: EmptyPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        profileStore: store,
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+    model.customCameraEnabled = true
+    model.customCameraURL = "rtsp://camera.local/live"
+    model.isUploadingJob = true
+
+    #expect(model.selectedPrinterProfileChangeReadinessMessage == "Upload in progress.")
+    #expect(model.canClearSelectedPrinterCheckCode == false)
+    #expect(model.canResetSelectedCameraSettings == false)
+    #expect(model.canRemoveSelectedPrinter == false)
+
+    model.clearSelectedPrinterCheckCode()
+    #expect(model.checkCode == "123456")
+    #expect(store.document.profiles.first?.checkCode == "123456")
+    #expect(model.connectionMessage == "Upload in progress.")
+
+    model.resetSelectedCameraSettings()
+    #expect(model.customCameraEnabled == true)
+    #expect(model.customCameraURL == "rtsp://camera.local/live")
+    #expect(store.document.profiles.first?.cameraUserConfig?.customCameraEnabled == true)
+    #expect(model.connectionMessage == "Upload in progress.")
+
+    model.removeSelectedPrinter()
+    #expect(model.printers.count == 1)
+    #expect(model.selectedPrinter?.id == printer.id)
+    #expect(store.document.profiles.count == 1)
+    #expect(model.connectionMessage == "Upload in progress.")
+}
+
+@MainActor
 @Test func manualPrinterProfileIsAddedSelectedAndSaved() async {
     let store = RecordingProfileStore()
     let model = AppModel(

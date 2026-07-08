@@ -75,6 +75,12 @@ public struct SettingsView: View {
                         showsForgetPrinterConfirmation = true
                     }
                     .disabled(!model.canRemoveSelectedPrinter)
+
+                    if let profileReadinessMessage = model.selectedPrinterProfileChangeReadinessMessage {
+                        Label(profileReadinessMessage, systemImage: "info.circle")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
                     Text("Select a printer to edit its profile.")
                         .foregroundStyle(.secondary)
@@ -90,6 +96,7 @@ public struct SettingsView: View {
                 Section("Connection") {
                     SecureField("Check code", text: $model.checkCode)
                         .textFieldStyle(.roundedBorder)
+                        .disabled(model.selectedPrinterProfileChangeReadinessMessage != nil)
 
                     Button("Forget Check Code") {
                         model.clearSelectedPrinterCheckCode()
@@ -108,10 +115,11 @@ public struct SettingsView: View {
 
                 Section("Camera") {
                     Toggle("Use custom camera URL", isOn: $model.customCameraEnabled)
+                        .disabled(model.selectedPrinterProfileChangeReadinessMessage != nil)
 
                     TextField("Camera URL", text: $model.customCameraURL)
                         .textFieldStyle(.roundedBorder)
-                        .disabled(!model.customCameraEnabled)
+                        .disabled(!model.customCameraEnabled || model.selectedPrinterProfileChangeReadinessMessage != nil)
 
                     if let validationMessage = customCameraValidationMessage {
                         Label(validationMessage, systemImage: "exclamationmark.triangle")

@@ -206,11 +206,14 @@ public final class AppModel {
     }
 
     public var canClearSelectedPrinterCheckCode: Bool {
-        hasSelectedPrinterCheckCode
+        hasSelectedPrinterCheckCode && selectedPrinterProfileChangeReadinessMessage == nil
     }
 
     public func clearSelectedPrinterCheckCode() {
         guard canClearSelectedPrinterCheckCode else {
+            if let readinessMessage = selectedPrinterProfileChangeReadinessMessage {
+                connectionMessage = readinessMessage
+            }
             return
         }
 
@@ -787,11 +790,15 @@ public final class AppModel {
             return false
         }
 
-        return customCameraEnabled || !customCameraURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return selectedPrinterProfileChangeReadinessMessage == nil
+            && (customCameraEnabled || !customCameraURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 
     public func resetSelectedCameraSettings() {
         guard canResetSelectedCameraSettings else {
+            if let readinessMessage = selectedPrinterProfileChangeReadinessMessage {
+                connectionMessage = readinessMessage
+            }
             return
         }
 
@@ -805,7 +812,39 @@ public final class AppModel {
             return false
         }
 
-        return !isPreviewPrinter(selectedPrinter)
+        return !isPreviewPrinter(selectedPrinter) && selectedPrinterProfileChangeReadinessMessage == nil
+    }
+
+    public var selectedPrinterProfileChangeReadinessMessage: String? {
+        if isDiscovering {
+            return "Discovery in progress."
+        }
+
+        if isConnecting {
+            return "Connecting to the selected printer."
+        }
+
+        if isConnectingKnownPrinters {
+            return "Identifying printers."
+        }
+
+        if isRefreshingStatus {
+            return "Refreshing the selected printer."
+        }
+
+        if isRefreshingAllStatuses {
+            return "Refreshing printer statuses."
+        }
+
+        if isUploadingJob {
+            return "Upload in progress."
+        }
+
+        if isSendingJobCommand {
+            return "Sending job command."
+        }
+
+        return nil
     }
 
     public var selectedPrinterRemovalConfirmationTitle: String {
@@ -1042,7 +1081,17 @@ public final class AppModel {
     }
 
     public func removeSelectedPrinter() {
-        guard let printer = selectedPrinter, canRemoveSelectedPrinter else {
+        guard let printer = selectedPrinter else {
+            connectionMessage = "Select a saved printer to forget."
+            return
+        }
+
+        if let readinessMessage = selectedPrinterProfileChangeReadinessMessage {
+            connectionMessage = readinessMessage
+            return
+        }
+
+        guard canRemoveSelectedPrinter else {
             connectionMessage = "Select a saved printer to forget."
             return
         }
