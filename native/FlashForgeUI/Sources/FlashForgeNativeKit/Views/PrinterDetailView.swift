@@ -64,12 +64,14 @@ public struct PrinterDetailView: View {
         .navigationTitle(printer.name)
         .toolbar {
             ToolbarItemGroup {
-                Button {
-                    Task { await model.connectSelectedPrinter() }
-                } label: {
-                    Label("Connect", systemImage: "link")
+                if model.shouldShowSelectedPrinterConnectAction {
+                    Button {
+                        Task { await model.connectSelectedPrinter() }
+                    } label: {
+                        Label("Connect", systemImage: "link")
+                    }
+                    .disabled(!model.canConnectSelectedPrinter)
                 }
-                .disabled(!model.canConnectSelectedPrinter)
 
                 Button {
                     Task { await model.refreshSelectedPrinterStatus() }
@@ -133,18 +135,23 @@ public struct PrinterDetailView: View {
         }
     }
 
+    @ViewBuilder
     private var header: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 16) {
-                headerText
-                Spacer()
-                connectButton
-            }
+        if model.shouldShowSelectedPrinterConnectAction {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 16) {
+                    headerText
+                    Spacer()
+                    connectButton
+                }
 
-            VStack(alignment: .leading, spacing: 12) {
-                headerText
-                connectButton
+                VStack(alignment: .leading, spacing: 12) {
+                    headerText
+                    connectButton
+                }
             }
+        } else {
+            headerText
         }
     }
 
@@ -175,14 +182,14 @@ public struct PrinterDetailView: View {
             if let failureSummary = model.selectedPrinterStatusFailureSummary {
                 actionableMessage(failureSummary, systemImage: "exclamationmark.triangle", isWarning: true)
             }
-            if let connectReadinessMessage = model.selectedPrinterConnectReadinessMessage {
+            if model.shouldShowSelectedPrinterConnectAction,
+               let connectReadinessMessage = model.selectedPrinterConnectReadinessMessage {
                 Label(connectReadinessMessage, systemImage: "info.circle")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
         }
     }
-
     private var connectButton: some View {
         Button {
             Task { await model.connectSelectedPrinter() }
@@ -908,8 +915,8 @@ private struct TemperatureTelemetryTile: View {
                 Text(NativeFormatters.temperature(item.reading))
                     .font(.title3.weight(.semibold))
                     .lineLimit(1)
-                if item.history.isEmpty {
-                    Text("Waiting for samples")
+                if item.history.count < 2 {
+                    Text(item.history.isEmpty ? "Waiting for samples" : "Waiting for trend")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -925,7 +932,7 @@ private struct TemperatureTelemetryTile: View {
 
     @ViewBuilder
     private var temperatureChart: some View {
-        if !item.history.isEmpty {
+        if item.history.count >= 2 {
             Chart {
                 ForEach(item.history) { point in
                     LineMark(
@@ -933,11 +940,6 @@ private struct TemperatureTelemetryTile: View {
                         y: .value("Current", point.current)
                     )
                     .interpolationMethod(.catmullRom)
-
-                    PointMark(
-                        x: .value("Time", point.timestamp),
-                        y: .value("Current", point.current)
-                    )
 
                     if let target = point.target, target > 0 {
                         LineMark(

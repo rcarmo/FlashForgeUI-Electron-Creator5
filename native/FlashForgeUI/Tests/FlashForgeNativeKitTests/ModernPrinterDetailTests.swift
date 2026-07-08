@@ -93,10 +93,38 @@ import Testing
     #expect(status.bedCurrent == 52)
     #expect(status.bedTarget == 60)
     #expect(status.toolheadTemperatures == [
-        ToolheadTemperature(id: "left", label: "Left Toolhead", reading: TemperatureReading(current: 31, target: 0)),
+        ToolheadTemperature(id: "left", label: "Left Toolhead", reading: TemperatureReading(current: 31)),
         ToolheadTemperature(id: "right", label: "Right Toolhead", reading: TemperatureReading(current: 216, target: 220)),
-        ToolheadTemperature(id: "toolhead-3", label: "Toolhead 3", reading: TemperatureReading(current: 42, target: 0)),
-        ToolheadTemperature(id: "toolhead-4", label: "Toolhead 4", reading: TemperatureReading(current: 43, target: 0))
+        ToolheadTemperature(id: "toolhead-3", label: "Toolhead 3", reading: TemperatureReading(current: 42)),
+        ToolheadTemperature(id: "toolhead-4", label: "Toolhead 4", reading: TemperatureReading(current: 43))
+    ])
+}
+
+@Test func decodesZeroBasedFourToolheadTemperatures() throws {
+    let json = """
+    {
+      "name": "Creator 5 Pro",
+      "pid": 36,
+      "status": "ready",
+      "temp0": 26,
+      "temp0Target": 0,
+      "temp1": 25,
+      "temp1Target": 0,
+      "temp2": 24,
+      "temp2Target": 0,
+      "temp3": 23,
+      "temp3Target": 0
+    }
+    """.data(using: .utf8)!
+
+    let detail = try JSONDecoder().decode(ModernPrinterDetail.self, from: json)
+    let status = detail.status
+
+    #expect(status.toolheadTemperatures == [
+        ToolheadTemperature(id: "toolhead-1", label: "Toolhead 1", reading: TemperatureReading(current: 26)),
+        ToolheadTemperature(id: "toolhead-2", label: "Toolhead 2", reading: TemperatureReading(current: 25)),
+        ToolheadTemperature(id: "toolhead-3", label: "Toolhead 3", reading: TemperatureReading(current: 24)),
+        ToolheadTemperature(id: "toolhead-4", label: "Toolhead 4", reading: TemperatureReading(current: 23))
     ])
 }
 

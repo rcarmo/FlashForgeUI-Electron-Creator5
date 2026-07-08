@@ -252,29 +252,23 @@ private extension ModernPrinterDetail {
             || lowercasedKey.contains("nozzle")
             || lowercasedKey.contains("extruder")
             || lowercasedKey.contains("head")
+            || lowercasedKey.contains { $0.isNumber }
     }
 
     var toolheadTemperatures: [ToolheadTemperature] {
         let knownToolheads = [
-            decodedToolhead(id: "left", label: "Left Toolhead", currentKey: "leftTemp", targetKey: "leftTargetTemp"),
-            decodedToolhead(id: "right", label: "Right Toolhead", currentKey: "rightTemp", targetKey: "rightTargetTemp"),
-            decodedToolhead(id: "nozzle", label: "Nozzle", currentKey: "nozzleTemp", targetKey: "nozzleTargetTemp"),
-            decodedToolhead(id: "extruder", label: "Extruder", currentKey: "extruderTemp", targetKey: "extruderTargetTemp")
+            decodedToolhead(id: "left", label: "Left Toolhead", currentKeys: ["leftTemp"], targetKeys: ["leftTargetTemp"]),
+            decodedToolhead(id: "right", label: "Right Toolhead", currentKeys: ["rightTemp"], targetKeys: ["rightTargetTemp"]),
+            decodedToolhead(id: "nozzle", label: "Nozzle", currentKeys: ["nozzleTemp"], targetKeys: ["nozzleTargetTemp"]),
+            decodedToolhead(id: "extruder", label: "Extruder", currentKeys: ["extruderTemp"], targetKeys: ["extruderTargetTemp"])
         ].compactMap { $0 }
 
-        let numberedToolheads = [
-            decodedToolhead(
-                id: "toolhead-1",
-                label: "Toolhead 1",
-                currentKey: "tool0Temp",
-                targetKey: "tool0TargetTemp"
-            )
-        ].compactMap { $0 } + (1...4).compactMap { index in
+        let numberedToolheads = (1...4).compactMap { index in
             decodedToolhead(
                 id: "toolhead-\(index)",
                 label: "Toolhead \(index)",
-                currentKey: "tool\(index)Temp",
-                targetKey: "tool\(index)TargetTemp"
+                currentKeys: numberedTemperatureKeys(for: index, target: false),
+                targetKeys: numberedTemperatureKeys(for: index, target: true)
             )
         }
 
@@ -301,7 +295,7 @@ private extension ModernPrinterDetail {
             ToolheadTemperature(
                 id: "nozzle",
                 label: "Nozzle",
-                reading: TemperatureReading(current: rightTemp ?? 0, target: rightTargetTemp ?? 0)
+                reading: TemperatureReading(current: rightTemp ?? 0, target: normalizedTarget(rightTargetTemp))
             )
         ]
     }
@@ -309,11 +303,11 @@ private extension ModernPrinterDetail {
     private func decodedToolhead(
         id: String,
         label: String,
-        currentKey: String,
-        targetKey: String
+        currentKeys: [String],
+        targetKeys: [String]
     ) -> ToolheadTemperature? {
-        let current = dynamicNumber(for: currentKey)
-        let target = dynamicNumber(for: targetKey)
+        let current = firstDynamicNumber(for: currentKeys)
+        let target = normalizedTarget(firstDynamicNumber(for: targetKeys))
 
         guard current != nil || target != nil else {
             return nil
@@ -324,6 +318,72 @@ private extension ModernPrinterDetail {
             label: label,
             reading: TemperatureReading(current: current ?? 0, target: target)
         )
+    }
+
+    private func numberedTemperatureKeys(for index: Int, target: Bool) -> [String] {
+        let payloadIndex = usesZeroBasedToolheadIndexes ? index - 1 : index
+        let prefixes = [
+            "toolhead\(payloadIndex)",
+            "toolHead\(payloadIndex)",
+            "tool\(payloadIndex)",
+            "extruder\(payloadIndex)",
+            "nozzle\(payloadIndex)",
+            "head\(payloadIndex)",
+            "temp\(payloadIndex)"
+        ]
+
+        if target {
+            return prefixes.flatMap { prefix in
+                [
+                    "\(prefix)Target",
+                    "\(prefix)TargetTemp",
+                    "\(prefix)TargetTemperature",
+                    "\(prefix)Set",
+                    "\(prefix)SetTemp",
+                    "\(prefix)SetTemperature"
+                ]
+            }
+        }
+
+        return prefixes.flatMap { prefix in
+            [
+                prefix,
+                "\(prefix)Temp",
+                "\(prefix)Temperature",
+                "\(prefix)CurrentTemp",
+                "\(prefix)CurrentTemperature"
+            ]
+        }
+    }
+
+    private var usesZeroBasedToolheadIndexes: Bool {
+        extraTemperatureFields.keys.contains { key in
+            let lowercasedKey = key.lowercased()
+            return lowercasedKey.contains("toolhead0")
+                || lowercasedKey.contains("tool0")
+                || lowercasedKey.contains("extruder0")
+                || lowercasedKey.contains("nozzle0")
+                || lowercasedKey.contains("head0")
+                || lowercasedKey.contains("temp0")
+        }
+    }
+
+    private func firstDynamicNumber(for keys: [String]) -> Double? {
+        for key in keys {
+            if let value = dynamicNumber(for: key) {
+                return value
+            }
+        }
+
+        return nil
+    }
+
+    private func normalizedTarget(_ value: Double?) -> Double? {
+        guard let value, value > 0 else {
+            return nil
+        }
+
+        return value
     }
 
     private func dynamicNumber(for key: String) -> Double? {
@@ -337,7 +397,12 @@ private extension ModernPrinterDetail {
         case "rightTargetTemp":
             return rightTargetTemp
         default:
-            return extraTemperatureFields[key]
+            if let exactValue = extraTemperatureFields[key] {
+                return exactValue
+            }
+
+            let lowercasedKey = key.lowercased()
+            return extraTemperatureFields.first { $0.key.lowercased() == lowercasedKey }?.value
         }
     }
 }

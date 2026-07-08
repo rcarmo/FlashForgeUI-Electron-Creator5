@@ -954,6 +954,31 @@ import Testing
 }
 
 @MainActor
+@Test func connectSelectedPrinterIsHiddenWhenIdentityIsKnown() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "Creator 5 Pro",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        commandPort: 8899,
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 0),
+        bedTemperature: TemperatureReading(current: 0)
+    )
+    let model = AppModel(
+        service: PreviewPrinterService(),
+        bootstrapClient: FakeBootstrapClient(),
+        printers: [printer]
+    )
+    model.selection = .printer(printer.id)
+
+    #expect(model.shouldShowSelectedPrinterConnectAction == false)
+    #expect(model.selectedPrinterConnectReadinessMessage == "Printer identity is already known.")
+    #expect(model.canConnectSelectedPrinter == false)
+}
+
+@MainActor
 @Test func connectSelectedPrinterRefreshesStatusWhenCheckCodeIsSaved() async {
     let modernClient = RecordingModernClient(status: .printing)
     let printer = PrinterSnapshot(

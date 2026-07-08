@@ -3,7 +3,7 @@ import Foundation
 public enum NativeFormatters {
     public static func temperature(_ reading: TemperatureReading) -> String {
         let current = "\(Int(reading.current.rounded())) C"
-        guard let target = reading.target else {
+        guard let target = reading.target, target > 0 else {
             return current
         }
         return "\(current) / \(Int(target.rounded())) C"

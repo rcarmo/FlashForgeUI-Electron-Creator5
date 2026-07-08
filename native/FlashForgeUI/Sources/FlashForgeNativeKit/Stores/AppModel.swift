@@ -648,6 +648,18 @@ public final class AppModel {
         selectedPrinterConnectReadinessMessage == nil
     }
 
+    public var shouldShowSelectedPrinterConnectAction: Bool {
+        if isConnecting {
+            return true
+        }
+
+        guard let printer = selectedPrinter else {
+            return false
+        }
+
+        return printer.serialNumber?.isEmpty != false
+    }
+
     public var selectedPrinterConnectReadinessMessage: String? {
         if isDiscovering {
             return "Discovery in progress."
@@ -681,8 +693,14 @@ public final class AppModel {
             return "Select a printer first."
         }
 
-        if let printer = selectedPrinter, printerNeedsAccessCode(printer) {
-            return "Enter the Device ID below to connect."
+        if let printer = selectedPrinter {
+            if printer.serialNumber?.isEmpty == false {
+                return "Printer identity is already known."
+            }
+
+            if printerNeedsAccessCode(printer) {
+                return "Enter the Device ID below to connect."
+            }
         }
 
         return nil
