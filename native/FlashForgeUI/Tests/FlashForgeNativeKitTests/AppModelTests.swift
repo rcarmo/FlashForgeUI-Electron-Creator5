@@ -593,8 +593,23 @@ import Testing
     #expect(model.resolvedCameraState(for: printer) == .available)
     #expect(model.canResetSelectedCameraSettings == true)
 
+    model.setSelectedCameraEnabled(false)
+    #expect(model.cameraEnabled == false)
+    #expect(store.document.profiles.first?.cameraUserConfig?.cameraEnabled == false)
+    #expect(store.document.profiles.first?.cameraUserConfig?.customCameraEnabled == true)
+    #expect(store.document.profiles.first?.cameraUserConfig?.customCameraURL == "rtsp://camera.local/live")
+    #expect(model.selectedCameraStreamConfig.isAvailable == false)
+    #expect(model.selectedCameraStreamConfig.unavailableReason == "Camera is off for this printer.")
+    #expect(model.selectedCameraStreamURL == nil)
+
+    model.setSelectedCameraEnabled(true)
+    #expect(model.cameraEnabled == true)
+    #expect(model.selectedCameraStreamConfig.sourceType == .custom)
+    #expect(model.selectedCameraStreamConfig.streamURL?.absoluteString == "rtsp://camera.local/live")
+
     model.resetSelectedCameraSettings()
 
+    #expect(model.cameraEnabled == true)
     #expect(model.customCameraEnabled == false)
     #expect(model.customCameraURL == "")
     #expect(model.selectedCameraStreamConfig.sourceType == .intelligentFallback)

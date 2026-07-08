@@ -120,12 +120,18 @@ public struct PrinterDetailView: View {
     private var cameraSection: some View {
         CameraPreviewView(
             config: model.selectedCameraStreamConfig,
-            recoveryReadiness: cameraRecoveryReadinessMessage(for:)
-        ) { _ in
-            model.acknowledgeCameraOpen()
-        } onRecover: { recoveryAction in
-            handleCameraRecovery(recoveryAction)
-        }
+            isCameraEnabled: model.cameraEnabled,
+            recoveryReadiness: cameraRecoveryReadinessMessage(for:),
+            onCameraEnabledChange: { isEnabled in
+                model.setSelectedCameraEnabled(isEnabled)
+            },
+            onOpenStream: { _ in
+                model.acknowledgeCameraOpen()
+            },
+            onRecover: { recoveryAction in
+                handleCameraRecovery(recoveryAction)
+            }
+        )
     }
 
     @ViewBuilder

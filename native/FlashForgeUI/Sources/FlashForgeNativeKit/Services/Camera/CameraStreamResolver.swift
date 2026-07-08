@@ -18,12 +18,31 @@ public enum CameraRecoveryAction: String, Codable, Sendable {
 }
 
 public struct CameraUserConfig: Codable, Equatable, Sendable {
+    public var cameraEnabled: Bool
     public var customCameraEnabled: Bool
     public var customCameraURL: String?
 
-    public init(customCameraEnabled: Bool = false, customCameraURL: String? = nil) {
+    public init(
+        cameraEnabled: Bool = true,
+        customCameraEnabled: Bool = false,
+        customCameraURL: String? = nil
+    ) {
+        self.cameraEnabled = cameraEnabled
         self.customCameraEnabled = customCameraEnabled
         self.customCameraURL = customCameraURL
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.cameraEnabled = try container.decodeIfPresent(Bool.self, forKey: .cameraEnabled) ?? true
+        self.customCameraEnabled = try container.decodeIfPresent(Bool.self, forKey: .customCameraEnabled) ?? false
+        self.customCameraURL = try container.decodeIfPresent(String.self, forKey: .customCameraURL)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case cameraEnabled
+        case customCameraEnabled
+        case customCameraURL
     }
 }
 
@@ -71,7 +90,10 @@ public struct CameraStreamConfig: Equatable, Sendable {
             actions.append(recoveryAction)
         }
 
-        if !isAvailable, sourceType == .none, !actions.contains(.openSettings) {
+        if !isAvailable,
+           sourceType == .none,
+           recoverySuggestion != nil,
+           !actions.contains(.openSettings) {
             actions.append(.openSettings)
         }
 
@@ -108,6 +130,14 @@ public enum CameraStreamResolver {
         userConfig: CameraUserConfig,
         cameraFeatures: CameraFeatureConfig
     ) -> CameraStreamConfig {
+        guard userConfig.cameraEnabled else {
+            return CameraStreamConfig(
+                sourceType: .none,
+                isAvailable: false,
+                unavailableReason: "Camera is off for this printer."
+            )
+        }
+
         if userConfig.customCameraEnabled {
             let normalizedURL = userConfig.customCameraURL?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             switch validateCameraURL(normalizedURL) {

@@ -4,50 +4,43 @@ public struct CameraPreviewView: View {
     @Environment(\.openURL) private var openURL
 
     private let config: CameraStreamConfig
+    private let isCameraEnabled: Bool
     private let recoveryReadiness: (CameraRecoveryAction) -> String?
+    private let onCameraEnabledChange: (Bool) -> Void
     private let onOpenStream: (URL) -> Void
     private let onRecover: (CameraRecoveryAction) -> Void
 
     public init(
         config: CameraStreamConfig,
+        isCameraEnabled: Bool = true,
         recoveryReadiness: @escaping (CameraRecoveryAction) -> String? = { _ in nil },
+        onCameraEnabledChange: @escaping (Bool) -> Void = { _ in },
         onOpenStream: @escaping (URL) -> Void = { _ in },
         onRecover: @escaping (CameraRecoveryAction) -> Void = { _ in }
     ) {
         self.config = config
+        self.isCameraEnabled = isCameraEnabled
         self.recoveryReadiness = recoveryReadiness
+        self.onCameraEnabledChange = onCameraEnabledChange
         self.onOpenStream = onOpenStream
         self.onRecover = onRecover
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Label("Camera", systemImage: "video")
-                    .font(.title2.weight(.semibold))
-
-                Spacer()
-
-                Text(config.sourceLabel)
-                    .foregroundStyle(.secondary)
-
-                if let streamURL = config.streamURL, config.isAvailable {
-                    Button {
-                        open(streamURL)
-                    } label: {
-                        Label("Open", systemImage: "arrow.up.forward.app")
-                    }
-                    .help("Open camera stream")
-                }
-            }
-
+        ZStack(alignment: .topTrailing) {
             content
                 .frame(maxWidth: .infinity)
-                .frame(height: 260)
+                .frame(height: 340)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(alignment: .topLeading) {
+                    sourceBadge
+                }
+                .overlay(alignment: .topTrailing) {
+                    overlayControls
+                }
         }
-        .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     @ViewBuilder
@@ -55,14 +48,9 @@ public struct CameraPreviewView: View {
         if let streamURL = config.streamURL, config.isAvailable {
             if config.canRenderInline {
                 CameraStreamWebView(url: streamURL)
-                    .overlay(alignment: .bottomLeading) {
-                        streamBadge(streamURL: streamURL)
-                    }
             } else {
                 fallbackContent(
-                    title: config.streamType == .rtsp ? "RTSP Stream" : "External Stream",
-                    message: streamURL.absoluteString,
-                    streamURL: streamURL
+                    title: config.streamType == .rtsp ? "RTSP Stream" : "External Stream"
                 )
             }
         } else {
@@ -107,22 +95,15 @@ public struct CameraPreviewView: View {
         .background(.quaternary.opacity(0.35))
     }
 
-    private func fallbackContent(title: String, message: String, streamURL: URL) -> some View {
+    private func fallbackContent(title: String) -> some View {
         VStack(spacing: 10) {
             Image(systemName: "video")
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
             Text(title)
                 .font(.headline)
-            Text(message)
+            Text("Open this stream in an external app.")
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Button {
-                open(streamURL)
-            } label: {
-                Label("Open Stream", systemImage: "arrow.up.forward.app")
-            }
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -134,21 +115,48 @@ public struct CameraPreviewView: View {
         onOpenStream(streamURL)
     }
 
+    private var cameraToggleBinding: Binding<Bool> {
+        Binding(
+            get: { isCameraEnabled },
+            set: { onCameraEnabledChange($0) }
+        )
+    }
+
+    private var overlayControls: some View {
+        HStack(spacing: 10) {
+            Toggle("Camera", isOn: cameraToggleBinding)
+                .toggleStyle(.switch)
+
+            if let streamURL = config.streamURL, config.isAvailable {
+                Button {
+                    open(streamURL)
+                } label: {
+                    Label("Open", systemImage: "arrow.up.forward.app")
+                }
+                .help("Open camera stream")
+            }
+        }
+        .controlSize(.regular)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(.regularMaterial, in: Capsule())
+        .padding(10)
+    }
+
+    private var sourceBadge: some View {
+        Label(config.sourceLabel, systemImage: config.isAvailable ? "video" : "video.slash")
+            .font(.callout.weight(.medium))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(.regularMaterial, in: Capsule())
+            .padding(10)
+    }
+
     private func recoveryReadinessMessage(for recoveryAction: CameraRecoveryAction) -> String? {
         let message = recoveryReadiness(recoveryAction)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return message.isEmpty ? nil : message
     }
 
-    private func streamBadge(streamURL: URL) -> some View {
-        Text(streamURL.absoluteString)
-            .font(.caption)
-            .lineLimit(1)
-            .truncationMode(.middle)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(.regularMaterial, in: Capsule())
-            .padding(10)
-    }
 }
 
 private extension CameraRecoveryAction {

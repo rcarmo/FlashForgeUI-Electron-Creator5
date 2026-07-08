@@ -1,6 +1,22 @@
 import FlashForgeNativeKit
 import Testing
 
+@Test func cameraResolverRespectsDisabledCamera() throws {
+    let config = CameraStreamResolver.resolve(
+        userConfig: CameraUserConfig(cameraEnabled: false),
+        cameraFeatures: CameraFeatureConfig(
+            oemStreamURL: "http://192.168.1.25:8080/?action=stream",
+            fallbackStreamURL: CameraStreamResolver.flashForgeMJPEGURL(ipAddress: "192.168.1.25")
+        )
+    )
+
+    #expect(config.sourceType == .none)
+    #expect(config.isAvailable == false)
+    #expect(config.streamURL == nil)
+    #expect(config.unavailableReason == "Camera is off for this printer.")
+    #expect(config.recoveryActions == [])
+}
+
 @Test func cameraResolverPrefersValidCustomURL() throws {
     let config = CameraStreamResolver.resolve(
         userConfig: CameraUserConfig(

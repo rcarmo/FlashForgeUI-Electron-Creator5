@@ -94,6 +94,15 @@ public final class AppModel {
             }
         }
     }
+    public var cameraEnabled: Bool {
+        didSet {
+            guard !isApplyingProfileSettings else {
+                return
+            }
+            rememberProfileSettings(for: selection)
+            saveProfiles()
+        }
+    }
     public var customCameraEnabled: Bool {
         didSet {
             guard !isApplyingProfileSettings else {
@@ -161,6 +170,7 @@ public final class AppModel {
         self.levelingBeforePrint = true
         self.isUploadingJob = false
         self.lastUpdated = nil
+        self.cameraEnabled = true
         self.customCameraEnabled = false
         self.customCameraURL = ""
         self.checkCode = ""
@@ -963,6 +973,7 @@ public final class AppModel {
 
     public var selectedCameraUserConfig: CameraUserConfig {
         CameraUserConfig(
+            cameraEnabled: cameraEnabled,
             customCameraEnabled: customCameraEnabled,
             customCameraURL: customCameraURL
         )
@@ -978,7 +989,7 @@ public final class AppModel {
         }
 
         return selectedPrinterProfileChangeReadinessMessage == nil
-            && (customCameraEnabled || !customCameraURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            && (!cameraEnabled || customCameraEnabled || !customCameraURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 
     public func resetSelectedCameraSettings() {
@@ -989,9 +1000,25 @@ public final class AppModel {
             return
         }
 
+        cameraEnabled = true
         customCameraEnabled = false
         customCameraURL = ""
         connectionMessage = "Camera settings reset for this printer."
+    }
+
+    public func setSelectedCameraEnabled(_ isEnabled: Bool) {
+        guard selectedPrinter != nil else {
+            connectionMessage = "Select a printer first."
+            return
+        }
+
+        if let readinessMessage = selectedPrinterProfileChangeReadinessMessage {
+            connectionMessage = readinessMessage
+            return
+        }
+
+        cameraEnabled = isEnabled
+        connectionMessage = isEnabled ? "Camera turned on." : "Camera turned off."
     }
 
     public var canRemoveSelectedPrinter: Bool {
@@ -1823,8 +1850,9 @@ public final class AppModel {
         }
 
         let trimmedCameraURL = customCameraURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        if customCameraEnabled || !trimmedCameraURL.isEmpty {
+        if !cameraEnabled || customCameraEnabled || !trimmedCameraURL.isEmpty {
             cameraConfigsByPrinterID[id] = CameraUserConfig(
+                cameraEnabled: cameraEnabled,
                 customCameraEnabled: customCameraEnabled,
                 customCameraURL: trimmedCameraURL.isEmpty ? nil : trimmedCameraURL
             )
@@ -1839,6 +1867,7 @@ public final class AppModel {
 
         guard case .printer(let id) = selection else {
             checkCode = ""
+            cameraEnabled = true
             customCameraEnabled = false
             customCameraURL = ""
             return
@@ -1846,6 +1875,7 @@ public final class AppModel {
 
         checkCode = checkCodesByPrinterID[id] ?? ""
         let config = cameraConfigsByPrinterID[id] ?? CameraUserConfig()
+        cameraEnabled = config.cameraEnabled
         customCameraEnabled = config.customCameraEnabled
         customCameraURL = config.customCameraURL ?? ""
     }
