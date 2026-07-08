@@ -413,6 +413,10 @@ public final class AppModel {
     }
 
     public var selectedPrinterConnectReadinessMessage: String? {
+        if isDiscovering {
+            return "Discovery in progress."
+        }
+
         if isConnecting {
             return "Connecting to this printer."
         }
@@ -433,6 +437,10 @@ public final class AppModel {
     }
 
     public var selectedPrinterStatusRefreshReadinessMessage: String? {
+        if isDiscovering {
+            return "Discovery in progress."
+        }
+
         if isRefreshingStatus {
             return "Refreshing this printer."
         }
@@ -465,6 +473,10 @@ public final class AppModel {
     }
 
     public var connectKnownPrintersReadinessMessage: String? {
+        if isDiscovering {
+            return "Discovery in progress."
+        }
+
         if isConnectingKnownPrinters {
             return "Identifying printers."
         }
@@ -481,6 +493,10 @@ public final class AppModel {
     }
 
     public var refreshKnownPrinterStatusesReadinessMessage: String? {
+        if isDiscovering {
+            return "Discovery in progress."
+        }
+
         if isRefreshingAllStatuses {
             return "Refreshing printer statuses."
         }

@@ -55,6 +55,33 @@ import Testing
 }
 
 @MainActor
+@Test func discoveryInProgressPausesOtherPrinterNetworkActions() async {
+    let printer = PrinterSnapshot(
+        name: "Desk Printer",
+        model: "AD5X",
+        address: "192.168.1.44",
+        serialNumber: "SN-TEST",
+        eventPort: 8898,
+        status: .ready,
+        nozzleTemperature: TemperatureReading(current: 30),
+        bedTemperature: TemperatureReading(current: 28)
+    )
+    let model = AppModel(service: EmptyPrinterService(), bootstrapClient: FakeBootstrapClient(), printers: [printer])
+    model.selection = .printer(printer.id)
+    model.checkCode = "123456"
+    model.isDiscovering = true
+
+    #expect(model.selectedPrinterConnectReadinessMessage == "Discovery in progress.")
+    #expect(model.canConnectSelectedPrinter == false)
+    #expect(model.connectKnownPrintersReadinessMessage == "Discovery in progress.")
+    #expect(model.canConnectKnownPrinters == false)
+    #expect(model.selectedPrinterStatusRefreshReadinessMessage == "Discovery in progress.")
+    #expect(model.canRefreshSelectedPrinterStatus == false)
+    #expect(model.refreshKnownPrinterStatusesReadinessMessage == "Discovery in progress.")
+    #expect(model.canRefreshKnownPrinterStatuses == false)
+}
+
+@MainActor
 @Test func savedProfilesLoadSelectedPrinterAndCheckCode() async {
     let printerID = UUID()
     let store = RecordingProfileStore(
