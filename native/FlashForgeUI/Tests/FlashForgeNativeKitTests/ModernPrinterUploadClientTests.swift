@@ -95,7 +95,70 @@ import Testing
     }
 }
 
+@Test func uploadClientReportsTransportFailure() async throws {
+    let directoryURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FlashForgeNativeTests-\(UUID().uuidString)", isDirectory: true)
+    let fileURL = directoryURL.appendingPathComponent("part.gcode")
+    defer {
+        try? FileManager.default.removeItem(at: directoryURL)
+        UploadTransportFailureMockURLProtocol.handler = nil
+    }
+    try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+    try Data("G1 X10".utf8).write(to: fileURL)
+
+    UploadTransportFailureMockURLProtocol.handler = { _ in
+        throw URLError(.cannotConnectToHost)
+    }
+
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [UploadTransportFailureMockURLProtocol.self]
+    let client = URLSessionModernPrinterUploadClient(session: URLSession(configuration: configuration))
+
+    do {
+        try await client.upload(
+            PrinterUploadRequest(fileURL: fileURL, startPrint: true, levelingBeforePrint: true),
+            host: "192.168.1.44",
+            port: 8898,
+            serialNumber: "SN-TEST",
+            checkCode: "123456"
+        )
+        Issue.record("Expected upload to fail")
+    } catch let error as ModernPrinterUploadError {
+        #expect(error == .transportFailed)
+    }
+}
+
 private final class UploadMockURLProtocol: URLProtocol, @unchecked Sendable {
+    static var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = Self.handler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+
+        do {
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
+}
+
+private final class UploadTransportFailureMockURLProtocol: URLProtocol, @unchecked Sendable {
     static var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
 
     override class func canInit(with request: URLRequest) -> Bool {

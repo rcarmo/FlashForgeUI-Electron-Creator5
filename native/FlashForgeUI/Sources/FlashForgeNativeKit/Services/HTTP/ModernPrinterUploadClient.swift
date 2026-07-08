@@ -66,7 +66,14 @@ public struct URLSessionModernPrinterUploadClient: ModernPrinterUploadClient {
             request.setValue(value, forHTTPHeaderField: key)
         }
 
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw ModernPrinterUploadError.transportFailed
+        }
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModernPrinterUploadError.invalidResponse
         }

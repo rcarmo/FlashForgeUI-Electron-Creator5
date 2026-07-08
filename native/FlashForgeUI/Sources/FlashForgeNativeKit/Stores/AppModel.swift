@@ -1558,6 +1558,8 @@ public final class AppModel {
         }
 
         switch httpError {
+        case .transportFailed:
+            return "Last refresh failed. Check that the printer is online and reachable on the network."
         case .invalidURL, .invalidResponse:
             return "Last refresh failed. The printer returned an unexpected status response."
         case .httpStatus(let statusCode, let message):
@@ -1591,6 +1593,8 @@ public final class AppModel {
         }
 
         switch httpError {
+        case .transportFailed:
+            return "\(action) \(target). Check that the printer is online and reachable on the network."
         case .invalidURL, .invalidResponse:
             return "\(action) \(target). The printer returned an unexpected status response."
         case .httpStatus(let statusCode, let message):

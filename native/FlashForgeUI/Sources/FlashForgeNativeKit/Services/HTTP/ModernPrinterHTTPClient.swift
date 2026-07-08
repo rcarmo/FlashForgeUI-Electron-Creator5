@@ -6,6 +6,7 @@ public protocol ModernPrinterHTTPClient {
 
 public enum ModernPrinterHTTPError: Error, Equatable, Sendable {
     case invalidURL
+    case transportFailed
     case invalidResponse
     case httpStatus(Int, String?)
     case printerRejectedRequest(String)
@@ -38,7 +39,14 @@ public final class URLSessionModernPrinterHTTPClient: ModernPrinterHTTPClient {
         request.timeoutInterval = 5
         request.httpBody = try JSONEncoder().encode(DetailRequest(serialNumber: serialNumber, checkCode: checkCode))
 
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw ModernPrinterHTTPError.transportFailed
+        }
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModernPrinterHTTPError.invalidResponse
         }
