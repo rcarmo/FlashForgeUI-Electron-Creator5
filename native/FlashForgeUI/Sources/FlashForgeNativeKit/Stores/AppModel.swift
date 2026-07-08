@@ -947,6 +947,11 @@ public final class AppModel {
     }
 
     public func discoverPrinters() async {
+        guard !isDiscovering else {
+            connectionMessage = "Discovery in progress."
+            return
+        }
+
         isDiscovering = true
         connectionMessage = nil
         defer { isDiscovering = false }

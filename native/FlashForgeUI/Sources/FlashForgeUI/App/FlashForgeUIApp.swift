@@ -44,6 +44,7 @@ struct FlashForgeUIApp: App {
                     Task { await model.discoverPrinters() }
                 }
                 .keyboardShortcut("r", modifiers: [.command])
+                .disabled(model.isDiscovering)
 
                 Button("Connect Selected Printer") {
                     Task { await model.connectSelectedPrinter() }

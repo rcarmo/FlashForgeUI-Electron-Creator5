@@ -42,6 +42,19 @@ import Testing
 }
 
 @MainActor
+@Test func discoveryRequestWhileAlreadyDiscoveringDoesNotStartAnotherScan() async {
+    let service = RecordingPrinterService()
+    let model = AppModel(service: service, bootstrapClient: FakeBootstrapClient())
+    model.isDiscovering = true
+
+    await model.discoverPrinters()
+
+    #expect(service.requestCount == 0)
+    #expect(model.connectionMessage == "Discovery in progress.")
+    #expect(model.isDiscovering == true)
+}
+
+@MainActor
 @Test func savedProfilesLoadSelectedPrinterAndCheckCode() async {
     let printerID = UUID()
     let store = RecordingProfileStore(
@@ -2762,6 +2775,15 @@ private struct SinglePrinterService: PrinterService {
 
     func discoverPrinters() async throws -> [PrinterSnapshot] {
         [printer]
+    }
+}
+
+private final class RecordingPrinterService: PrinterService, @unchecked Sendable {
+    var requestCount = 0
+
+    func discoverPrinters() async throws -> [PrinterSnapshot] {
+        requestCount += 1
+        return []
     }
 }
 
