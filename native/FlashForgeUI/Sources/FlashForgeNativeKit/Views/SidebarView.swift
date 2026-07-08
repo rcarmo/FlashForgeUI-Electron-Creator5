@@ -44,6 +44,7 @@ public struct SidebarView: View {
                 } label: {
                     Label("Add Printer", systemImage: "plus")
                 }
+                .disabled(!model.canChangeManualPrinterProfile)
                 .help("Add printer")
             }
 

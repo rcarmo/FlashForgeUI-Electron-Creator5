@@ -888,6 +888,10 @@ public final class AppModel {
         selectedPrinterProfileChangeReadinessMessage
     }
 
+    public var canChangeManualPrinterProfile: Bool {
+        manualPrinterProfileChangeReadinessMessage == nil
+    }
+
     public func manualPrinterAddressPreview(for address: String) -> String? {
         guard let normalizedAddress = normalizedManualPrinterAddress(address) else {
             return nil
@@ -908,7 +912,7 @@ public final class AppModel {
     }
 
     public func canSubmitManualPrinterAddress(_ address: String) -> Bool {
-        manualPrinterProfileChangeReadinessMessage == nil
+        canChangeManualPrinterProfile
             && normalizedManualPrinterAddress(address) != nil
     }
 

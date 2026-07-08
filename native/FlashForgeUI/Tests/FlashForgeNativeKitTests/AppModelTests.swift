@@ -727,6 +727,7 @@ import Testing
     model.isDiscovering = true
 
     #expect(model.manualPrinterProfileChangeReadinessMessage == "Discovery in progress.")
+    #expect(model.canChangeManualPrinterProfile == false)
     #expect(model.canSubmitManualPrinterAddress("192.168.1.77") == false)
 
     let didAdd = model.addManualPrinter(name: "Workshop", address: "192.168.1.77", checkCode: "123456")
@@ -735,6 +736,11 @@ import Testing
     #expect(model.printers.isEmpty)
     #expect(store.document.profiles.isEmpty)
     #expect(model.connectionMessage == "Discovery in progress.")
+
+    model.isDiscovering = false
+    #expect(model.manualPrinterProfileChangeReadinessMessage == nil)
+    #expect(model.canChangeManualPrinterProfile == true)
+    #expect(model.canSubmitManualPrinterAddress("192.168.1.77") == true)
 }
 
 @MainActor

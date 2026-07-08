@@ -32,6 +32,7 @@ struct FlashForgeUIApp: App {
                     showsAddPrinter = true
                 }
                 .keyboardShortcut("n", modifiers: [.command])
+                .disabled(!model.canChangeManualPrinterProfile)
 
                 Button("Forget Selected Printer...") {
                     confirmForgetSelectedPrinter()

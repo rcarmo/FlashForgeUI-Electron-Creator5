@@ -96,6 +96,7 @@ public struct DashboardView: View {
             Label("Add Printer", systemImage: "plus")
         }
         .controlSize(.large)
+        .disabled(!model.canChangeManualPrinterProfile)
     }
 
     private var discoverButton: some View {
