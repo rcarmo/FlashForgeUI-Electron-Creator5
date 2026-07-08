@@ -1189,6 +1189,7 @@ public final class AppModel {
         }
 
         guard doesUploadFileExist(fileURL) else {
+            removeRecentUploadFile(fileURL, for: printer.id)
             selectedUploadFileURL = nil
             connectionMessage = "Choose the job file again."
             return

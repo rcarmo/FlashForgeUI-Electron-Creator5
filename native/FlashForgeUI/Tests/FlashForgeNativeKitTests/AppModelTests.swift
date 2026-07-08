@@ -2399,10 +2399,13 @@ import Testing
 
     #expect(model.selectedUploadReadinessMessage == "Choose the job file again.")
     #expect(model.canUploadSelectedJob == false)
+    #expect(model.recentUploadFileURLs.count == 1)
 
     await model.uploadSelectedJob()
 
     #expect(model.selectedUploadFileURL == nil)
+    #expect(model.recentUploadFileURLs.isEmpty)
+    #expect(model.canClearRecentUploadFiles == false)
     #expect(model.selectedUploadReadinessMessage == "Choose a job file first.")
     #expect(model.connectionMessage == "Choose the job file again.")
 }
