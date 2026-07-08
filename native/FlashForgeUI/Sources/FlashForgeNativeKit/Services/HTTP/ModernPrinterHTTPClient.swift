@@ -274,10 +274,33 @@ public struct MaterialStationInfo: Decodable, Equatable, Sendable {
     public var status: MaterialStationStatus {
         MaterialStationStatus(
             connected: true,
-            slots: slotInfos.map { $0.slotStatus },
+            slots: normalizedSlots,
             activeSlot: currentSlot == 0 ? nil : currentSlot,
             overallStatus: stateAction > 0 ? .warming : .ready
         )
+    }
+
+    private var normalizedSlots: [MaterialStationSlot] {
+        let reportedSlots = slotInfos
+            .map { $0.slotStatus }
+            .filter { $0.slotId > 0 }
+
+        guard slotCnt > 0 else {
+            return reportedSlots
+        }
+
+        let reportedBySlotID = Dictionary(
+            reportedSlots.map { ($0.slotId, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
+        let declaredSlots = (1...slotCnt).map { slotID in
+            reportedBySlotID[slotID] ?? MaterialStationSlot(slotId: slotID, isEmpty: true)
+        }
+        let extraReportedSlots = reportedSlots
+            .filter { $0.slotId > slotCnt }
+            .sorted { $0.slotId < $1.slotId }
+
+        return declaredSlots + extraReportedSlots
     }
 }
 

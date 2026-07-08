@@ -54,6 +54,8 @@ import Testing
     #expect(status.jobSnapshot?.fileName == "benchy.3mf")
     #expect(status.materialStation?.activeSlot == 2)
     #expect(status.materialStation?.overallStatus == .ready)
+    #expect(status.materialStation?.slots.count == 4)
+    #expect(status.materialStation?.slots.map(\.slotId) == [1, 2, 3, 4])
     #expect(status.materialStation?.slots.first?.materialType == "PLA")
     #expect(status.materialStation?.slots.first?.materialColor == "#ff0000")
     #expect(status.materialStation?.slots.last?.isEmpty == true)
@@ -115,6 +117,9 @@ import Testing
     #expect(station?.activeSlot == 4)
     #expect(station?.overallStatus == .warming)
     #expect(station?.slots == [
+        MaterialStationSlot(slotId: 1, isEmpty: true),
+        MaterialStationSlot(slotId: 2, isEmpty: true),
+        MaterialStationSlot(slotId: 3, isEmpty: true),
         MaterialStationSlot(
             slotId: 4,
             materialType: "ABS",
