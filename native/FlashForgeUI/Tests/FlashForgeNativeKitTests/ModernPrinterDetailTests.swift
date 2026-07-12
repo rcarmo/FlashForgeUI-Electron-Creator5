@@ -110,6 +110,8 @@ import Testing
       "status": "ready",
       "camera": 1,
       "cameraStreamUrl": "http://192.168.1.161:8080/?action=stream",
+      "chamberTargetTemp": 0,
+      "chamberTemp": 25,
       "matlStationInfo": {
         "currentSlot": 0,
         "slotCnt": 4,
@@ -143,6 +145,7 @@ import Testing
     #expect(status.nozzleCount == 4)
     #expect(status.hasCamera == true)
     #expect(status.cameraStreamURL == "http://192.168.1.161:8080/?action=stream")
+    #expect(status.chamberTemperature == TemperatureReading(current: 25))
     #expect(status.toolheadTemperatures == [
         ToolheadTemperature(id: "toolhead-1", label: "Toolhead 1", reading: TemperatureReading(current: 25)),
         ToolheadTemperature(id: "toolhead-2", label: "Toolhead 2", reading: TemperatureReading(current: 26)),

@@ -423,7 +423,7 @@ public final class AppModel {
             )
         }
 
-        return toolheadItems + [
+        var items = toolheadItems + [
             TemperatureTelemetryItem(
                 id: "bed",
                 title: "Bed",
@@ -431,6 +431,19 @@ public final class AppModel {
                 history: temperatureHistory(for: printer.id, channelID: "bed")
             )
         ]
+
+        if let chamberTemperature = printer.chamberTemperature {
+            items.append(
+                TemperatureTelemetryItem(
+                    id: "chamber",
+                    title: "Chamber",
+                    reading: chamberTemperature,
+                    history: temperatureHistory(for: printer.id, channelID: "chamber")
+                )
+            )
+        }
+
+        return items
     }
 
     public func temperatureHistory(for printerID: UUID, channelID: String) -> [TemperatureHistoryPoint] {
@@ -2391,6 +2404,7 @@ public final class AppModel {
             current: status.bedCurrent,
             target: status.bedTarget
         )
+        printers[index].chamberTemperature = status.chamberTemperature
         printers[index].activeJob = status.jobSnapshot
         printers[index].material = status.materialSnapshot
         printers[index].materialStation = status.materialStation
@@ -2401,11 +2415,14 @@ public final class AppModel {
     private func recordTemperatureHistory(for printerID: UUID, status: ModernPrinterStatus) {
         let timestamp = Date()
         var printerHistory = temperatureHistoryByPrinterID[printerID] ?? [:]
-        let channels = status.toolheadTemperatures.map { toolhead in
+        var channels = status.toolheadTemperatures.map { toolhead in
             (id: toolhead.id, reading: toolhead.reading)
         } + [
             (id: "bed", reading: TemperatureReading(current: status.bedCurrent, target: status.bedTarget))
         ]
+        if let chamberTemperature = status.chamberTemperature {
+            channels.append((id: "chamber", reading: chamberTemperature))
+        }
 
         for channel in channels {
             var history = printerHistory[channel.id] ?? []

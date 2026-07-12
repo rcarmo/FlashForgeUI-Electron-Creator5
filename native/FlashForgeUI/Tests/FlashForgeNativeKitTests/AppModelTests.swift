@@ -1334,12 +1334,14 @@ import Testing
         "Toolhead 3",
         "Toolhead 4"
     ])
+    #expect(model.selectedPrinter?.chamberTemperature == TemperatureReading(current: 35, target: 40))
     #expect(model.temperatureTelemetryItems(for: model.printers[0]).map(\.title) == [
         "Left Toolhead",
         "Right Toolhead",
         "Toolhead 3",
         "Toolhead 4",
-        "Bed"
+        "Bed",
+        "Chamber"
     ])
     #expect(model.temperatureTelemetryItems(for: model.printers[0]).allSatisfy { $0.history.count == 1 })
     #expect(model.selectedPrinter?.activeJob?.fileName == "benchy.3mf")
@@ -3172,6 +3174,7 @@ private struct FakeModernClient: ModernPrinterHTTPClient {
             ],
             bedCurrent: 58,
             bedTarget: 60,
+            chamberTemperature: TemperatureReading(current: 35, target: 40),
             printFileName: "benchy.3mf",
             printProgress: 0.25,
             estimatedTime: 3600,

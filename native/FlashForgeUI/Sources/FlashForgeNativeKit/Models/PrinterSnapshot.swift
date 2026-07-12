@@ -12,6 +12,7 @@ public struct PrinterSnapshot: Identifiable, Hashable, Codable, Sendable {
     public var status: PrinterStatus
     public var nozzleTemperature: TemperatureReading
     public var bedTemperature: TemperatureReading
+    public var chamberTemperature: TemperatureReading?
     public var toolheadTemperatures: [ToolheadTemperature]
     public var activeJob: PrintJobSnapshot?
     public var material: MaterialSnapshot?
@@ -30,6 +31,7 @@ public struct PrinterSnapshot: Identifiable, Hashable, Codable, Sendable {
         status: PrinterStatus,
         nozzleTemperature: TemperatureReading,
         bedTemperature: TemperatureReading,
+        chamberTemperature: TemperatureReading? = nil,
         toolheadTemperatures: [ToolheadTemperature]? = nil,
         activeJob: PrintJobSnapshot? = nil,
         material: MaterialSnapshot? = nil,
@@ -47,6 +49,7 @@ public struct PrinterSnapshot: Identifiable, Hashable, Codable, Sendable {
         self.status = status
         self.nozzleTemperature = nozzleTemperature
         self.bedTemperature = bedTemperature
+        self.chamberTemperature = chamberTemperature
         self.toolheadTemperatures = toolheadTemperatures ?? [
             ToolheadTemperature(id: "nozzle", label: "Nozzle", reading: nozzleTemperature)
         ]

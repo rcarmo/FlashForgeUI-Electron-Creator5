@@ -121,6 +121,8 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
     public var rawStatus: String?
     public var platTemp: Double?
     public var platTargetTemp: Double?
+    public var chamberTemp: Double?
+    public var chamberTargetTemp: Double?
     public var leftTemp: Double?
     public var leftTargetTemp: Double?
     public var rightTemp: Double?
@@ -147,6 +149,8 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
         case rawStatus = "status"
         case platTemp
         case platTargetTemp
+        case chamberTemp
+        case chamberTargetTemp
         case leftTemp
         case leftTargetTemp
         case rightTemp
@@ -182,6 +186,8 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
         self.rawStatus = try container.decodeIfPresent(String.self, forKey: .rawStatus)
         self.platTemp = try container.decodeFlexibleDoubleIfPresent(for: .platTemp)
         self.platTargetTemp = try container.decodeFlexibleDoubleIfPresent(for: .platTargetTemp)
+        self.chamberTemp = try container.decodeFlexibleDoubleIfPresent(for: .chamberTemp)
+        self.chamberTargetTemp = try container.decodeFlexibleDoubleIfPresent(for: .chamberTargetTemp)
         self.leftTemp = try container.decodeFlexibleDoubleIfPresent(for: .leftTemp)
         self.leftTargetTemp = try container.decodeFlexibleDoubleIfPresent(for: .leftTargetTemp)
         self.rightTemp = try container.decodeFlexibleDoubleIfPresent(for: .rightTemp)
@@ -239,6 +245,7 @@ public struct ModernPrinterDetail: Decodable, Equatable, Sendable {
             toolheadTemperatures: normalizedToolheadTemperatures(nozzleCount: nozzleCount),
             bedCurrent: platTemp ?? 0,
             bedTarget: platTargetTemp ?? 0,
+            chamberTemperature: chamberTemperature,
             printFileName: printFileName ?? "",
             printProgress: printProgress ?? 0,
             estimatedTime: estimatedTime ?? 0,
@@ -290,6 +297,17 @@ private extension ModernPrinterDetail {
 
     var inferredNozzleCount: Int {
         max(nozzleCnt ?? 0, nozzleTemps.count, nozzleTargetTemps.count, toolheadTemperatures.count, 1)
+    }
+
+    var chamberTemperature: TemperatureReading? {
+        guard chamberTemp != nil || chamberTargetTemp != nil else {
+            return nil
+        }
+
+        return TemperatureReading(
+            current: chamberTemp ?? 0,
+            target: normalizedTarget(chamberTargetTemp)
+        )
     }
 
     func normalizedToolheadTemperatures(nozzleCount: Int) -> [ToolheadTemperature] {

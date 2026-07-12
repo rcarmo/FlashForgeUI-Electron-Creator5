@@ -16,6 +16,7 @@ public struct ModernPrinterStatus: Equatable, Sendable {
     public var toolheadTemperatures: [ToolheadTemperature]
     public var bedCurrent: Double
     public var bedTarget: Double
+    public var chamberTemperature: TemperatureReading?
     public var printFileName: String
     public var printProgress: Double
     public var estimatedTime: TimeInterval
@@ -40,6 +41,7 @@ public struct ModernPrinterStatus: Equatable, Sendable {
         toolheadTemperatures: [ToolheadTemperature]? = nil,
         bedCurrent: Double,
         bedTarget: Double,
+        chamberTemperature: TemperatureReading? = nil,
         printFileName: String = "",
         printProgress: Double = 0,
         estimatedTime: TimeInterval = 0,
@@ -69,6 +71,7 @@ public struct ModernPrinterStatus: Equatable, Sendable {
         ]
         self.bedCurrent = bedCurrent
         self.bedTarget = bedTarget
+        self.chamberTemperature = chamberTemperature
         self.printFileName = printFileName
         self.printProgress = printProgress
         self.estimatedTime = estimatedTime
