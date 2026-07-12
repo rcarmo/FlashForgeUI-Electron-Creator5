@@ -971,16 +971,16 @@ private struct TemperatureTelemetryTile: View {
         let normalizedTitle = item.title.lowercased()
 
         if normalizedID == "bed" || normalizedTitle.contains("bed") {
-            return 150
+            return 120
         }
 
         if normalizedID.contains("chamber")
             || normalizedID.contains("enclosure")
             || normalizedTitle.contains("chamber")
             || normalizedTitle.contains("enclosure") {
-            return 60
+            return 65
         }
 
-        return 300
+        return 320
     }
 }
