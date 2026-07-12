@@ -39,6 +39,9 @@ public struct PrinterDetailView: View {
         .onChange(of: printer.id) {
             accessCodeInput = model.checkCode
         }
+        .onChange(of: model.checkCode) {
+            accessCodeInput = model.checkCode
+        }
         .confirmationDialog(
             "Cancel the current print?",
             isPresented: $showsCancelConfirmation,
@@ -110,8 +113,6 @@ public struct PrinterDetailView: View {
             controlsSection
                 .layoutValue(key: DashboardColumnPreferenceKey.self, value: 0)
 
-            jobSection
-                .layoutValue(key: DashboardColumnPreferenceKey.self, value: 1)
             materialStationSection
                 .layoutValue(key: DashboardColumnPreferenceKey.self, value: 1)
         }
@@ -143,21 +144,17 @@ public struct PrinterDetailView: View {
 
     @ViewBuilder
     private var header: some View {
-        if model.shouldShowSelectedPrinterConnectAction {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 16) {
-                    headerText
-                    Spacer()
-                    connectButton
-                }
-
-                VStack(alignment: .leading, spacing: 12) {
-                    headerText
-                    connectButton
-                }
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 24) {
+                headerText
+                Spacer(minLength: 24)
+                headerActions
             }
-        } else {
-            headerText
+
+            VStack(alignment: .leading, spacing: 16) {
+                headerText
+                headerActions
+            }
         }
     }
 
@@ -204,6 +201,46 @@ public struct PrinterDetailView: View {
         }
         .controlSize(.large)
         .disabled(!model.canConnectSelectedPrinter)
+    }
+
+    private var headerActions: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 12) {
+                refreshStatusCluster
+                if model.shouldShowSelectedPrinterConnectAction {
+                    connectButton
+                }
+                jobSection
+                    .frame(width: 240)
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    refreshStatusCluster
+                    if model.shouldShowSelectedPrinterConnectAction {
+                        connectButton
+                    }
+                }
+                jobSection
+                    .frame(maxWidth: 320, alignment: .leading)
+            }
+        }
+    }
+
+    private var refreshStatusCluster: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            refreshButton
+
+            if statusRefreshIntervalSeconds > 0 {
+                Label("Auto-refresh every \(statusRefreshIntervalSeconds) seconds", systemImage: "clock.arrow.circlepath")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let refreshReadinessMessage = model.selectedPrinterStatusRefreshReadinessMessage {
+                actionableMessage(refreshReadinessMessage, systemImage: "info.circle")
+            }
+        }
     }
 
     @ViewBuilder
@@ -382,21 +419,6 @@ public struct PrinterDetailView: View {
 
     private var controlsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Common Actions")
-                .font(.title2.weight(.semibold))
-
-            refreshButton
-
-            if statusRefreshIntervalSeconds > 0 {
-                Label("Auto-refresh every \(statusRefreshIntervalSeconds) seconds", systemImage: "clock.arrow.circlepath")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-
-            if let refreshReadinessMessage = model.selectedPrinterStatusRefreshReadinessMessage {
-                actionableMessage(refreshReadinessMessage, systemImage: "info.circle")
-            }
-
             uploadDropZone
 
             if let uploadReadinessMessage = model.selectedUploadReadinessMessage {
